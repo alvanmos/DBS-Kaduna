@@ -8,8 +8,10 @@ When implementing from a selected generated mock, treat that image as the source
 
 ## Confirmed Homepage Direction
 
-- Use the selected "Guided Journey" split layout.
-- Keep registration and support actions on the left and the study guide carousel dominant on the right.
+- Use the selected "Open Book Welcome" layout.
+- Place paired logos and compact navigation across the top.
+- Center the welcome message and registration actions above a five-cover carousel.
 - Use the supplied study guide covers without altering their artwork.
+- Finish the page with a full-width WhatsApp help band.
 - Favor white space, navy, green, and restrained warm-gold accents.
 - Preserve keyboard access, reduced-motion behavior, and small-screen usability.
