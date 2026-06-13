@@ -1,57 +1,55 @@
 # Design QA
 
-- Source visual truth: `C:\Users\BTC\.codex\generated_images\019eb90e-44a8-77b3-868e-19c22a0ada39\ig_09412db01fca79c2016a2b871b337881918a43062c1bd0089f.png`
+- Source visual truth: `C:\Users\BTC\.codex\generated_images\019eb90e-44a8-77b3-868e-19c22a0ada39\ig_09412db01fca79c2016a2b866cac3481919ed9ee811b3a277d.png`
 - Implementation screenshot: `C:\Users\BTC\Documents\Website for DBS Kaduna\qa-home-desktop-final.png`
 - Mobile screenshot: `C:\Users\BTC\Documents\Website for DBS Kaduna\qa-home-mobile-final.png`
 - Combined comparison: `C:\Users\BTC\Documents\Website for DBS Kaduna\qa-comparison.png`
 - Desktop viewport: `1440 x 1200`
 - Mobile viewport: `390 x 844`
-- State: Homepage loaded with study guide 1 selected and the desktop login menu open.
+- State: Study Guide 1 selected with the desktop header login menu open.
 
 **Full-View Comparison Evidence**
 
-The combined comparison confirms the selected split composition: editorial welcome
-content and stacked actions on the left, dominant study-guide artwork on the right,
-paired logos above, navigation arrows flanking the covers, and guide progress below.
-The implementation uses the real repository artwork, so guides 2 and 3 differ from
-the generated concept while preserving its scale, overlap, and hierarchy.
+The comparison confirms the selected Open Book Welcome composition: paired logos
+and compact navigation across the top, centered welcome copy, three horizontal
+actions, a dominant five-cover carousel, progress below, and a full-width WhatsApp
+help band. The implementation uses the supplied logo and guide files, so some
+artwork differs from the generated concept while preserving its hierarchy.
 
 **Focused Region Comparison Evidence**
 
-A separate crop was not required. The 2000 x 940 combined comparison keeps the
-logos, headline, actions, login menu, cover stack, arrows, dots, counter, WhatsApp
-help, and invitation copy readable. The mobile screenshot was reviewed separately
-at a true emulated 390 px viewport.
+The full comparison keeps the logo lockup, navigation, headline, actions, login
+popover, five covers, arrows, guide count, indicators, and help band readable.
+The mobile screenshot was reviewed separately at a true 390 px viewport.
 
 **Findings**
 
 - No actionable P0, P1, or P2 mismatches remain.
-- Fonts and typography: The Georgia display face and system sans-serif hierarchy
-  reproduce the editorial character and remain readable at desktop and mobile sizes.
-- Spacing and layout rhythm: The guide stage carries the intended visual weight,
-  alignment is stable, and both verified viewports have no horizontal overflow.
-- Colors and visual tokens: Navy, green, white, and warm-gold accents match the
-  selected direction with accessible foreground contrast.
-- Image quality and asset fidelity: All 26 repository guide covers load at their
-  native quality. The two required logo assets are raster images, not code-drawn
-  approximations.
-- Copy and content: Required welcome text, three main actions, three login roles,
-  guide count, and WhatsApp number are present and exact.
-- Interactions: The carousel advances after 3 seconds, arrows and dots select
-  guides, the login menu toggles, and reduced-motion users do not receive autoplay.
+- Typography is large, readable, and maintains the reference's strong navy
+  hierarchy.
+- Spacing and layout rhythm closely follow the selected reference at desktop.
+- Navy, green, white, and warm-gold accents match the approved direction.
+- All 26 repository guide covers and both required logo assets load successfully.
+- Required welcome copy, registration actions, login roles, and WhatsApp contact
+  are present.
+- The carousel advances after 3 seconds; arrows and dots update the selected guide.
+- The desktop login menu exposes Student, Instructor, and Admin login links.
+- The 390 px layout has no horizontal overflow and retains the action login.
+- Reduced-motion users do not receive carousel autoplay.
+- Browser console checks completed without runtime errors.
 
-**Patches Made Since Previous QA Pass**
+**Patches Made During QA**
 
-- Moved the hero upward to remove excess empty space.
-- Enlarged the active guide and cover stage to satisfy the intended 70-75% emphasis.
-- Reduced the mobile headline scale and verified a 390 px layout without overflow.
-- Added a favicon to remove the only browser console warning.
+- Replaced the previous split hero with the approved centered Option 1 layout.
+- Added the desktop navigation and a second login entry in the header.
+- Expanded the carousel from three visible covers to five on desktop.
+- Moved WhatsApp support into the full-width closing band.
+- Restored the React import required by this project's JSX transform.
 
 **Follow-up Polish**
 
-- P3: The open login menu temporarily overlaps the help and invitation copy on
-  desktop, consistent with the selected concept's popover behavior.
-- P3: Exact official brand files can replace the generated raster logo assets later
-  without changing the layout.
+- P3: On narrow phones, neighboring covers are intentionally cropped to keep the
+  selected guide large and readable; the remaining carousel content is available
+  by vertical scroll.
 
 final result: passed

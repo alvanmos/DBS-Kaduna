@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  ArrowRight,
   CaretDown,
   CaretLeft,
   CaretRight,
@@ -48,10 +47,14 @@ const instructorRegistration = `https://wa.me/${whatsappNumber}?text=${encodeURI
   "Hello DBS Kaduna, I would like to register as a volunteer instructor.",
 )}`;
 
-function LoginMenu({ isOpen, onToggle }) {
+function LoginMenu({ isOpen, menuId, onToggle, variant = "action" }) {
   const menuRef = useRef(null);
 
   useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
     function closeOnOutsideClick(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         onToggle(false);
@@ -71,19 +74,26 @@ function LoginMenu({ isOpen, onToggle }) {
       document.removeEventListener("pointerdown", closeOnOutsideClick);
       document.removeEventListener("keydown", closeOnEscape);
     };
-  }, [onToggle]);
+  }, [isOpen, onToggle]);
 
   return (
-    <div className="login-menu" ref={menuRef}>
+    <div
+      className={`login-menu login-menu--${variant}`}
+      ref={menuRef}
+    >
       <button
-        className="action-button action-button--login"
+        className={`login-trigger login-trigger--${variant}`}
         type="button"
         aria-expanded={isOpen}
         aria-haspopup="menu"
-        aria-controls="login-options"
+        aria-controls={menuId}
         onClick={() => onToggle(!isOpen)}
       >
-        <LockKey aria-hidden="true" size={23} weight="bold" />
+        {variant === "header" ? (
+          <UserCircle aria-hidden="true" size={20} weight="bold" />
+        ) : (
+          <LockKey aria-hidden="true" size={23} weight="bold" />
+        )}
         <span>Login</span>
         <CaretDown
           className={isOpen ? "login-caret login-caret--open" : "login-caret"}
@@ -94,7 +104,7 @@ function LoginMenu({ isOpen, onToggle }) {
       </button>
 
       {isOpen && (
-        <div className="login-options" id="login-options" role="menu">
+        <div className="login-options" id={menuId} role="menu">
           {loginOptions.map(({ label, href, Icon, tone }) => (
             <a className="login-option" href={href} role="menuitem" key={label}>
               <span className={`login-option__icon login-option__icon--${tone}`}>
@@ -110,14 +120,22 @@ function LoginMenu({ isOpen, onToggle }) {
 }
 
 function GuideCarousel({ currentGuide, onSelect, onNext, onPrevious }) {
-  const visibleGuides = [0, 1, 2].map((offset) => ({
-    index: (currentGuide + offset) % GUIDE_COUNT,
+  const visibleGuides = [-2, -1, 0, 1, 2].map((offset) => ({
+    index: (currentGuide + offset + GUIDE_COUNT) % GUIDE_COUNT,
     position: offset,
   }));
+  const positionClasses = {
+    "-2": "previous-2",
+    "-1": "previous-1",
+    0: "current",
+    1: "next-1",
+    2: "next-2",
+  };
 
   return (
     <section
       className="guide-carousel"
+      id="study-guides"
       aria-label="Discover Bible study guides"
     >
       <div className="guide-stage">
@@ -133,10 +151,10 @@ function GuideCarousel({ currentGuide, onSelect, onNext, onPrevious }) {
         <div className="guide-stack">
           {visibleGuides.map(({ index, position }) => (
             <button
-              className={`guide-card guide-card--${position}`}
+              className={`guide-card guide-card--${positionClasses[position]}`}
               type="button"
               key={`${index}-${position}`}
-              onClick={() => position > 0 && onSelect(index)}
+              onClick={() => position !== 0 && onSelect(index)}
               aria-label={
                 position === 0
                   ? `Study guide ${index + 1}, currently selected`
@@ -166,6 +184,9 @@ function GuideCarousel({ currentGuide, onSelect, onNext, onPrevious }) {
       </div>
 
       <div className="carousel-meta">
+        <p className="guide-counter">
+          Study Guide <strong>{currentGuide + 1}</strong> of {GUIDE_COUNT}
+        </p>
         <div className="carousel-dots" aria-label="Choose a study guide">
           {guideImages.map((_, index) => (
             <button
@@ -182,11 +203,6 @@ function GuideCarousel({ currentGuide, onSelect, onNext, onPrevious }) {
             />
           ))}
         </div>
-        <p className="guide-counter">
-          Guide <strong>{String(currentGuide + 1).padStart(2, "0")}</strong>
-          <span aria-hidden="true"> / </span>
-          <span className="sr-only">of</span> {GUIDE_COUNT}
-        </p>
       </div>
     </section>
   );
@@ -194,7 +210,7 @@ function GuideCarousel({ currentGuide, onSelect, onNext, onPrevious }) {
 
 export function App() {
   const [currentGuide, setCurrentGuide] = useState(0);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [activeLoginMenu, setActiveLoginMenu] = useState(null);
   const [isCarouselPaused, setIsCarouselPaused] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
@@ -229,93 +245,90 @@ export function App() {
   return (
     <main className="site-shell">
       <header className="brand-header" aria-label="Discover Bible School">
-        <a className="brand-link brand-link--dbs" href="/" aria-label="Home">
-          <img src="/dbs-kaduna-logo.png" alt="DBS Kaduna" />
-        </a>
-        <span className="brand-divider" aria-hidden="true" />
-        <a
-          className="brand-link brand-link--vop"
-          href="https://www.voiceofprophecy.com/"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <img
-            src="/voice-of-prophecy-logo.png"
-            alt="Voice of Prophecy"
-          />
-        </a>
-      </header>
-
-      <div className="hero-layout">
-        <section className="welcome-panel" aria-labelledby="welcome-heading">
-          <p className="eyebrow">Free Bible correspondence lessons</p>
-          <h1 id="welcome-heading">
-            Discover Bible School, <span>Kaduna.</span>
-          </h1>
-          <div className="heading-rule" aria-hidden="true" />
-          <p className="hero-summary">
-            Free Bible School Correspondence for your Spiritual Growth.
-          </p>
-
-          <div className="primary-actions" aria-label="Registration and login">
-            <a
-              className="action-button action-button--student"
-              href={studentRegistration}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <GraduationCap aria-hidden="true" size={25} weight="fill" />
-              <span>Register as Student</span>
-              <ArrowRight
-                className="action-arrow"
-                aria-hidden="true"
-                size={22}
-                weight="bold"
-              />
-            </a>
-
-            <a
-              className="action-button action-button--instructor"
-              href={instructorRegistration}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <UsersThree aria-hidden="true" size={25} weight="fill" />
-              <span>Register as Volunteer Instructor</span>
-              <ArrowRight
-                className="action-arrow"
-                aria-hidden="true"
-                size={22}
-                weight="bold"
-              />
-            </a>
-
-            <LoginMenu isOpen={isLoginOpen} onToggle={setIsLoginOpen} />
-          </div>
-
+        <div className="brand-lockup">
+          <a className="brand-link brand-link--dbs" href="#home" aria-label="Home">
+            <img src="/dbs-kaduna-logo.png" alt="DBS Kaduna" />
+          </a>
+          <span className="brand-divider" aria-hidden="true" />
           <a
-            className="whatsapp-help"
-            href={`https://wa.me/${whatsappNumber}`}
+            className="brand-link brand-link--vop"
+            href="https://www.voiceofprophecy.com/"
             target="_blank"
             rel="noreferrer"
           >
-            <span className="whatsapp-help__icon">
-              <WhatsappLogo aria-hidden="true" size={31} weight="fill" />
-            </span>
-            <span>
-              <small>Need help? Chat with us on WhatsApp</small>
-              <strong>+234 810 017 1970</strong>
-            </span>
+            <img
+              src="/voice-of-prophecy-logo.png"
+              alt="Voice of Prophecy"
+            />
+          </a>
+        </div>
+
+        <nav className="site-nav" aria-label="Primary navigation">
+          <a className="site-nav__link site-nav__link--active" href="#home">
+            Home
+          </a>
+          <a className="site-nav__link" href="#welcome">
+            About Us
+          </a>
+          <a className="site-nav__link" href="#study-guides">
+            Study Guides
+          </a>
+          <a className="site-nav__link" href="#welcome">
+            How It Works
+          </a>
+          <a className="site-nav__link" href={instructorRegistration}>
+            Become an Instructor
+          </a>
+          <a className="site-nav__link" href="#contact">
+            Contact Us
+          </a>
+        </nav>
+
+        <LoginMenu
+          isOpen={activeLoginMenu === "header"}
+          menuId="header-login-options"
+          onToggle={(isOpen) => setActiveLoginMenu(isOpen ? "header" : null)}
+          variant="header"
+        />
+      </header>
+
+      <section className="welcome-panel" id="home" aria-labelledby="welcome-heading">
+        <div id="welcome">
+          <h1 id="welcome-heading">
+            Discover Bible School, Kaduna.
+          </h1>
+          <p className="hero-summary">
+            Free Bible School Correspondence for your Spiritual Growth.
+          </p>
+        </div>
+
+        <div className="primary-actions" aria-label="Registration and login">
+          <a
+            className="action-button action-button--student"
+            href={studentRegistration}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <GraduationCap aria-hidden="true" size={25} weight="fill" />
+            <span>Register as Student</span>
           </a>
 
-          <blockquote>
-            <p>
-              Let the Word of God guide your heart, transform your life, and
-              prepare you to share His love with the world.
-            </p>
-            <footer>You are invited. Let&apos;s grow together.</footer>
-          </blockquote>
-        </section>
+          <a
+            className="action-button action-button--instructor"
+            href={instructorRegistration}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <UsersThree aria-hidden="true" size={25} weight="fill" />
+            <span>Register as Volunteer Instructor</span>
+          </a>
+
+          <LoginMenu
+            isOpen={activeLoginMenu === "action"}
+            menuId="action-login-options"
+            onToggle={(isOpen) => setActiveLoginMenu(isOpen ? "action" : null)}
+          />
+        </div>
 
         <div
           className="carousel-panel"
@@ -335,7 +348,29 @@ export function App() {
             onPrevious={showPreviousGuide}
           />
         </div>
-      </div>
+      </section>
+
+      <footer className="help-band" id="contact">
+        <a
+          className="whatsapp-help"
+          href={`https://wa.me/${whatsappNumber}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          <span className="whatsapp-help__icon">
+            <WhatsappLogo aria-hidden="true" size={42} weight="fill" />
+          </span>
+          <span className="help-band__message">
+            <strong>Need Help?</strong>
+            <small>We&apos;re here to support you on your learning journey.</small>
+          </span>
+          <span className="help-band__divider" aria-hidden="true" />
+          <span className="help-band__contact">
+            <small>Chat with us on WhatsApp</small>
+            <strong>+234 810 017 1970</strong>
+          </span>
+        </a>
+      </footer>
     </main>
   );
 }
