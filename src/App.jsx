@@ -12,6 +12,8 @@ import {
 } from "@phosphor-icons/react";
 
 const GUIDE_COUNT = 26;
+const dbsKadunaLogo = "/dbs-kaduna-logo.png?v=20260613";
+const voiceOfProphecyLogo = "/voice-of-prophecy-logo.png?v=20260613";
 const guideImages = Array.from(
   { length: GUIDE_COUNT },
   (_, index) =>
@@ -247,7 +249,7 @@ export function App() {
       <header className="brand-header" aria-label="Discover Bible School">
         <div className="brand-lockup">
           <a className="brand-link brand-link--dbs" href="#home" aria-label="Home">
-            <img src="/dbs-kaduna-logo.png" alt="DBS Kaduna" />
+            <img src={dbsKadunaLogo} alt="DBS Kaduna" />
           </a>
           <span className="brand-divider" aria-hidden="true" />
           <a
@@ -257,7 +259,7 @@ export function App() {
             rel="noreferrer"
           >
             <img
-              src="/voice-of-prophecy-logo.png"
+              src={voiceOfProphecyLogo}
               alt="Voice of Prophecy"
             />
           </a>
