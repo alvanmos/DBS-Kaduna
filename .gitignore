@@ -1,9 +1,11 @@
 node_modules/
 dist/
 .npm-cache/
+.vite/
 *.log
 .vite-server.pid
 .chrome-cdp.pid
 qa-home-*.png
+qa-admin-*.png
 qa-comparison.png
 .vercel

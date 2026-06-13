@@ -52,4 +52,18 @@ scrolled mobile capture shows the full Guide 16 title.
 - Verified desktop at `1440 x 900` and mobile at `390 x 844`.
 - No broken images, horizontal overflow, or browser runtime errors were found.
 
+## Admin Dashboard QA
+
+- Source specification: `C:\Users\BTC\AppData\Local\Temp\codex-clipboard-329f0beb-a743-41a0-9fbb-3a5044d5f78d.png`
+- Desktop screenshot: `C:\Users\BTC\Documents\Website for DBS Kaduna\qa-admin-desktop.png`
+- Mobile screenshot: `C:\Users\BTC\Documents\Website for DBS Kaduna\qa-admin-mobile.png`
+- Verified first-use password setup and admin login at `/login/admin`.
+- Verified all eight dashboard sections and all 26 lesson upload slots.
+- Verified student assignment, instructor approval, PDF upload metadata, question
+  creation, certificate generation, certificate verification, news publishing,
+  and all four Excel-compatible report downloads.
+- Verified the mobile navigation drawer and responsive dashboard at `390 x 844`.
+- Verified the public homepage still renders after adding the admin routes.
+- No page overflow, error overlays, or browser console errors were found.
+
 final result: passed

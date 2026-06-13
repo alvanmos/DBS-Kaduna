@@ -17,3 +17,13 @@ When implementing from a selected generated mock, treat that image as the source
 - Finish the page with a full-width WhatsApp help band.
 - Favor white space, navy, green, and restrained warm-gold accents.
 - Preserve keyboard access, reduced-motion behavior, and small-screen usability.
+
+## Admin Dashboard Direction
+
+- Keep administration on `/login/admin` and `/admin`, separate from the public homepage.
+- Use the same DBS Kaduna navy, green, white, and warm-gold visual system.
+- Support student, instructor, lesson, question, certificate, report, and news management.
+- Keep all 26 lesson upload slots visible and identify lesson PDFs as protected content.
+- Treat the current browser-persisted data and password setup as prototype behavior only.
+- Production authentication, private file delivery, shared records, and password email
+  delivery require a secure backend and transactional email provider.
