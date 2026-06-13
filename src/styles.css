@@ -98,8 +98,8 @@ img {
 }
 
 .brand-link--dbs img {
-  width: clamp(200px, 18vw, 275px);
-  max-height: 80px;
+  width: clamp(90px, 8vw, 118px);
+  max-height: 90px;
   object-fit: contain;
 }
 
@@ -153,6 +153,7 @@ img {
 
 .brand-link:focus-visible,
 .site-nav__link:focus-visible,
+.news-button:focus-visible,
 .action-button:focus-visible,
 .login-trigger:focus-visible,
 .login-option:focus-visible,
@@ -188,26 +189,34 @@ img {
   transform: translateY(-2px);
 }
 
-.login-trigger--header {
+.news-button {
   min-height: 48px;
-  padding: 10px 16px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
   color: #ffffff;
   background: var(--blue-700);
-  border: 1px solid var(--blue-700);
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease;
 }
 
-.login-trigger--header:hover,
-.login-trigger--header[aria-expanded="true"] {
+.news-button:hover {
   background: var(--navy-950);
-  border-color: var(--navy-950);
+  transform: translateY(-2px);
 }
 
 .login-trigger--action {
   width: 100%;
   min-height: 58px;
   padding: 12px 24px;
-  color: var(--blue-700);
-  background: #ffffff;
+  color: #ffffff;
+  background: var(--blue-700);
   border: 2px solid var(--blue-700);
   font-size: 1.05rem;
 }
@@ -215,7 +224,8 @@ img {
 .login-trigger--action:hover,
 .login-trigger--action[aria-expanded="true"] {
   color: #ffffff;
-  background: var(--blue-700);
+  background: var(--navy-950);
+  border-color: var(--navy-950);
 }
 
 .login-caret {
@@ -677,8 +687,8 @@ h1 {
   }
 
   .brand-link--dbs img {
-    width: min(47vw, 182px);
-    max-height: 58px;
+    width: min(28vw, 92px);
+    max-height: 72px;
   }
 
   .brand-link--vop img {
@@ -690,7 +700,7 @@ h1 {
     height: 42px;
   }
 
-  .brand-header > .login-menu {
+  .brand-header > .news-button {
     display: none;
   }
 
