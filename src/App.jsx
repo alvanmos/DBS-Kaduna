@@ -300,7 +300,7 @@ export function App() {
             Discover Bible School, Kaduna.
           </h1>
           <p className="hero-summary">
-            Free Bible School Correspondence for your Spiritual Growth.
+            Free Bible School Correspondence Course for Your Spiritual Growth.
           </p>
         </div>
 
