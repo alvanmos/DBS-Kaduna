@@ -6,3 +6,4 @@ dist/
 .chrome-cdp.pid
 qa-home-*.png
 qa-comparison.png
+.vercel
