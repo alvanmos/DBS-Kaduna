@@ -5,6 +5,7 @@ import {
   CaretRight,
   GraduationCap,
   LockKey,
+  Newspaper,
   ShieldCheck,
   UserCircle,
   UsersThree,
@@ -12,7 +13,7 @@ import {
 } from "@phosphor-icons/react";
 
 const GUIDE_COUNT = 26;
-const dbsKadunaLogo = "/dbs-kaduna-logo.png?v=20260613";
+const dbsKadunaLogo = "/dbs-kaduna-logo.png?v=20260614";
 const voiceOfProphecyLogo = "/voice-of-prophecy-logo.png?v=20260613";
 const guideImages = Array.from(
   { length: GUIDE_COUNT },
@@ -286,12 +287,10 @@ export function App() {
           </a>
         </nav>
 
-        <LoginMenu
-          isOpen={activeLoginMenu === "header"}
-          menuId="header-login-options"
-          onToggle={(isOpen) => setActiveLoginMenu(isOpen ? "header" : null)}
-          variant="header"
-        />
+        <a className="news-button" href="#news" id="news">
+          <Newspaper aria-hidden="true" size={20} weight="bold" />
+          <span>News</span>
+        </a>
       </header>
 
       <section className="welcome-panel" id="home" aria-labelledby="welcome-heading">

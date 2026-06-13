@@ -1,6 +1,7 @@
 # Design QA
 
 - Source issue screenshot: `C:\Users\BTC\AppData\Local\Temp\codex-clipboard-549ef0de-51be-4501-8fce-731441101174.png`
+- Source logo: `C:\Users\BTC\AppData\Local\Temp\codex-clipboard-9c6b5a39-cb6f-4331-b11f-9991c6f1f0f3.png`
 - Repository logo assets: `public/dbs-kaduna-logo.png` and `public/voice-of-prophecy-logo.png`
 - Implementation screenshot: `C:\Users\BTC\Documents\Website for DBS Kaduna\qa-home-desktop-final.png`
 - Mobile screenshot: `C:\Users\BTC\Documents\Website for DBS Kaduna\qa-home-mobile-final.png`
@@ -40,5 +41,15 @@ at both desktop and mobile sizes, for 52 checked states.
 On a phone, the tall central cover extends below the first viewport and is reached
 by normal page scrolling. The cover itself is complete and uncropped; the verified
 scrolled mobile capture shows the full Guide 16 title.
+
+## Header Logo And Actions QA
+
+- Replaced `public/dbs-kaduna-logo.png` with the supplied circular DBS Kaduna logo.
+- Verified the rendered logo loads at its natural `256 x 256` resolution.
+- Replaced the desktop header Login control with a blue `News` control.
+- Changed the main Login control from white to solid blue.
+- Verified the main Login dropdown still exposes Student, Instructor, and Admin.
+- Verified desktop at `1440 x 900` and mobile at `390 x 844`.
+- No broken images, horizontal overflow, or browser runtime errors were found.
 
 final result: passed
