@@ -1570,6 +1570,14 @@ export function AdminDashboard({
               <small>{adminEmail}</small>
             </div>
           </div>
+          <button
+            className="admin-topbar-signout"
+            type="button"
+            onClick={onSignOut}
+          >
+            <SignOut aria-hidden="true" size={19} weight="bold" />
+            <span>Sign out</span>
+          </button>
         </header>
 
         <main className="admin-content">{content}</main>
