@@ -1,97 +1,248 @@
 import React, { useEffect, useState } from "react";
 import { AdminDashboard } from "./AdminDashboard.jsx";
 import { AdminLogin } from "./AdminLogin.jsx";
-import { ADMIN_EMAIL, createInitialAdminData } from "./adminData.js";
+import { ADMIN_EMAIL } from "./adminData.js";
+import {
+  addQuestion,
+  approveInstructor,
+  assignStudentInstructor,
+  deleteNews,
+  deleteQuestion,
+  getEmptyAdminData,
+  issueCertificate,
+  loadAdminData,
+  moveQuestion,
+  publishNews,
+  updateInstructor,
+  uploadLessonPdf,
+} from "./adminRepository.js";
+import {
+  getAuthFlowType,
+  isSupabaseConfigured,
+  supabase,
+} from "../lib/supabase.js";
 import "./admin.css";
 
-const DATA_KEY = "dbs-kaduna-admin-data-v1";
-const PASSWORD_KEY = "dbs-kaduna-admin-password-v1";
-const SESSION_KEY = "dbs-kaduna-admin-session";
+const initialFlowType = getAuthFlowType();
 
-function readStoredData() {
-  try {
-    const stored = window.localStorage.getItem(DATA_KEY);
-    return stored ? JSON.parse(stored) : createInitialAdminData();
-  } catch {
-    return createInitialAdminData();
-  }
+function cleanAuthUrl(path = "/login/admin") {
+  window.history.replaceState({}, "", path);
 }
 
-async function hashPassword(password) {
-  const bytes = new TextEncoder().encode(`dbs-kaduna:${password}`);
-  const digest = await window.crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
+function friendlyAuthError(error) {
+  if (!error) return "";
+  if (error.message?.toLowerCase().includes("invalid login credentials")) {
+    return "The email address or password is incorrect.";
+  }
+  if (error.message?.toLowerCase().includes("email not confirmed")) {
+    return "Confirm the email invitation before signing in.";
+  }
+  return error.message || "Authentication could not be completed.";
 }
 
 export function AdminPortal() {
-  const [data, setData] = useState(readStoredData);
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    () => window.sessionStorage.getItem(SESSION_KEY) === "active",
+  const [data, setData] = useState(getEmptyAdminData);
+  const [session, setSession] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [status, setStatus] = useState(
+    isSupabaseConfigured ? "loading" : "configuration-error",
   );
-  const [hasPassword, setHasPassword] = useState(
-    () => Boolean(window.localStorage.getItem(PASSWORD_KEY)),
+  const [statusMessage, setStatusMessage] = useState("");
+  const [requiresPasswordSetup, setRequiresPasswordSetup] = useState(
+    initialFlowType === "invite" || initialFlowType === "recovery",
   );
 
   useEffect(() => {
-    document.title = isAuthenticated
-      ? "Admin Dashboard | DBS Kaduna"
-      : "Admin Login | DBS Kaduna";
-  }, [isAuthenticated]);
+    document.title =
+      status === "authenticated"
+        ? "Admin Dashboard | DBS Kaduna"
+        : "Admin Login | DBS Kaduna";
+  }, [status]);
 
   useEffect(() => {
-    window.localStorage.setItem(DATA_KEY, JSON.stringify(data));
-  }, [data]);
+    if (!supabase) return undefined;
+    let isMounted = true;
 
-  async function createPassword(password) {
-    const passwordHash = await hashPassword(password);
-    window.localStorage.setItem(PASSWORD_KEY, passwordHash);
-    window.sessionStorage.setItem(SESSION_KEY, "active");
-    setHasPassword(true);
-    setIsAuthenticated(true);
-    window.history.replaceState({}, "", "/admin");
-  }
+    async function refreshData() {
+      const adminData = await loadAdminData();
+      if (isMounted) setData(adminData);
+      return adminData;
+    }
+
+    async function verifyAdmin(currentSession) {
+      if (!currentSession) {
+        if (!isMounted) return;
+        setSession(null);
+        setProfile(null);
+        setStatus("sign-in");
+        return;
+      }
+
+      if (!isMounted) return;
+      setSession(currentSession);
+
+      if (requiresPasswordSetup) {
+        setStatus("set-password");
+        return;
+      }
+
+      const { data: adminProfile, error } = await supabase
+        .from("profiles")
+        .select("id, email, full_name, role, status")
+        .eq("id", currentSession.user.id)
+        .single();
+
+      if (!isMounted) return;
+      if (
+        error ||
+        adminProfile?.role !== "admin" ||
+        adminProfile?.status !== "active"
+      ) {
+        await supabase.auth.signOut();
+        setSession(null);
+        setProfile(null);
+        setStatusMessage(
+          "This account does not have active administrator permission.",
+        );
+        setStatus("sign-in");
+        return;
+      }
+
+      setProfile(adminProfile);
+      setStatusMessage("");
+      try {
+        await refreshData();
+        if (!isMounted) return;
+        setStatus("authenticated");
+      } catch (dataError) {
+        setStatusMessage(
+          dataError.message || "The secure dashboard data could not be loaded.",
+        );
+        setStatus("sign-in");
+        return;
+      }
+      cleanAuthUrl("/admin");
+    }
+
+    supabase.auth.getSession().then(({ data: sessionData, error }) => {
+      if (!isMounted) return;
+      if (error) {
+        setStatusMessage(friendlyAuthError(error));
+        setStatus("sign-in");
+        return;
+      }
+      verifyAdmin(sessionData.session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setRequiresPasswordSetup(true);
+        setSession(currentSession);
+        setStatus("set-password");
+        return;
+      }
+      window.setTimeout(() => verifyAdmin(currentSession), 0);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [requiresPasswordSetup]);
 
   async function signIn(email, password) {
-    if (email.trim().toLowerCase() !== ADMIN_EMAIL) {
-      return "Use the registered administrator email.";
-    }
+    setStatusMessage("");
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+    return friendlyAuthError(error);
+  }
 
-    const storedHash = window.localStorage.getItem(PASSWORD_KEY);
-    const suppliedHash = await hashPassword(password);
-    if (!storedHash || suppliedHash !== storedHash) {
-      return "The password is incorrect.";
-    }
+  async function setPassword(password) {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) return friendlyAuthError(error);
 
-    window.sessionStorage.setItem(SESSION_KEY, "active");
-    setIsAuthenticated(true);
-    window.history.replaceState({}, "", "/admin");
+    setRequiresPasswordSetup(false);
+    cleanAuthUrl("/admin");
     return "";
   }
 
-  function signOut() {
-    window.sessionStorage.removeItem(SESSION_KEY);
-    setIsAuthenticated(false);
-    window.history.replaceState({}, "", "/login/admin");
+  async function requestPasswordReset(email) {
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      email.trim().toLowerCase(),
+      {
+        redirectTo: `${window.location.origin}/login/admin?type=recovery`,
+      },
+    );
+    return friendlyAuthError(error);
   }
 
-  if (!isAuthenticated) {
+  async function signOut() {
+    await supabase.auth.signOut();
+    setSession(null);
+    setProfile(null);
+    setStatus("sign-in");
+    cleanAuthUrl("/login/admin");
+  }
+
+  async function runAction(action) {
+    const result = await action();
+    setData(await loadAdminData());
+    return result;
+  }
+
+  const actions = {
+    assignStudent: (studentId, instructorId) =>
+      runAction(() => assignStudentInstructor(studentId, instructorId)),
+    approveInstructor: (applicationId, maxLoad) =>
+      runAction(() => approveInstructor(applicationId, maxLoad)),
+    updateInstructor: (instructorId, changes) =>
+      runAction(() => updateInstructor(instructorId, changes)),
+    uploadLesson: (lessonNumber, file) =>
+      runAction(() => uploadLessonPdf(lessonNumber, file)),
+    addQuestion: (question) => runAction(() => addQuestion(question)),
+    moveQuestion: (questionId, direction) =>
+      runAction(() => moveQuestion(questionId, direction)),
+    deleteQuestion: (questionId) =>
+      runAction(() => deleteQuestion(questionId)),
+    issueCertificate: (studentId) =>
+      runAction(() => issueCertificate(studentId)),
+    publishNews: (newsItem) => runAction(() => publishNews(newsItem)),
+    deleteNews: (newsItem) => runAction(() => deleteNews(newsItem)),
+  };
+
+  if (status === "loading") {
+    return (
+      <main className="admin-auth-shell">
+        <section className="admin-auth-card admin-auth-card--loading">
+          <img src="/dbs-kaduna-logo.png?v=20260614" alt="DBS Kaduna" />
+          <p>Checking your secure administrator session...</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (status !== "authenticated") {
     return (
       <AdminLogin
-        adminEmail={ADMIN_EMAIL}
-        hasPassword={hasPassword}
-        onCreatePassword={createPassword}
+        adminEmail={session?.user?.email ?? ADMIN_EMAIL}
+        mode={status}
+        statusMessage={statusMessage}
+        onSetPassword={setPassword}
         onSignIn={signIn}
+        onRequestPasswordReset={requestPasswordReset}
       />
     );
   }
 
   return (
     <AdminDashboard
-      adminEmail={ADMIN_EMAIL}
+      adminEmail={profile?.email ?? session?.user?.email ?? ADMIN_EMAIL}
       data={data}
-      onDataChange={setData}
+      actions={actions}
       onSignOut={signOut}
     />
   );

@@ -9,21 +9,25 @@ import {
 
 export function AdminLogin({
   adminEmail,
-  hasPassword,
-  onCreatePassword,
+  mode,
+  statusMessage,
+  onSetPassword,
   onSignIn,
+  onRequestPasswordReset,
 }) {
   const [email, setEmail] = useState(adminEmail);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
+    setNotice("");
 
-    if (!hasPassword) {
+    if (mode === "set-password") {
       if (password.length < 10) {
         setError("Create a password with at least 10 characters.");
         return;
@@ -35,14 +39,35 @@ export function AdminLogin({
     }
 
     setIsSubmitting(true);
-    if (hasPassword) {
+    if (mode === "sign-in") {
       const signInError = await onSignIn(email, password);
       setError(signInError);
     } else {
-      await onCreatePassword(password);
+      const setupError = await onSetPassword(password);
+      setError(setupError);
     }
     setIsSubmitting(false);
   }
+
+  async function handlePasswordReset() {
+    setError("");
+    setNotice("");
+    if (!email.trim()) {
+      setError("Enter the administrator email address first.");
+      return;
+    }
+    setIsSubmitting(true);
+    const resetError = await onRequestPasswordReset(email);
+    if (resetError) {
+      setError(resetError);
+    } else {
+      setNotice("A secure password-reset link has been sent by email.");
+    }
+    setIsSubmitting(false);
+  }
+
+  const isPasswordSetup = mode === "set-password";
+  const isUnavailable = mode === "configuration-error";
 
   return (
     <main className="admin-auth-shell">
@@ -65,79 +90,106 @@ export function AdminLogin({
         </div>
         <p className="admin-kicker">Secure administration</p>
         <h1 id="admin-login-heading">
-          {hasPassword ? "Welcome back" : "Set up the admin account"}
+          {isUnavailable
+            ? "Secure login unavailable"
+            : isPasswordSetup
+              ? "Create your secure password"
+              : "Welcome back"}
         </h1>
         <p className="admin-auth-intro">
-          {hasPassword
-            ? "Sign in to manage students, instructors, lessons, certificates, reports, and news."
-            : "Create the initial password for the registered administrator account on this browser."}
+          {isUnavailable
+            ? "The Supabase connection is not configured for this deployment."
+            : isPasswordSetup
+              ? "Your invitation has been verified. Choose the password you will use for future administrator sign-ins."
+              : "Sign in to manage students, instructors, lessons, certificates, reports, and news."}
         </p>
 
-        <form className="admin-auth-form" onSubmit={handleSubmit}>
-          <label>
-            <span>Administrator email</span>
-            <span className="admin-input-wrap">
-              <EnvelopeSimple aria-hidden="true" size={20} />
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                readOnly={!hasPassword}
-                autoComplete="username"
-                required
-              />
-            </span>
-          </label>
-
-          <label>
-            <span>{hasPassword ? "Password" : "Create password"}</span>
-            <span className="admin-input-wrap">
-              <LockKey aria-hidden="true" size={20} />
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete={hasPassword ? "current-password" : "new-password"}
-                minLength={hasPassword ? undefined : 10}
-                required
-              />
-            </span>
-          </label>
-
-          {!hasPassword && (
+        {!isUnavailable && (
+          <form className="admin-auth-form" onSubmit={handleSubmit}>
             <label>
-              <span>Confirm password</span>
+              <span>Administrator email</span>
               <span className="admin-input-wrap">
-                <CheckCircle aria-hidden="true" size={20} />
+                <EnvelopeSimple aria-hidden="true" size={20} />
                 <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  autoComplete="new-password"
-                  minLength={10}
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  readOnly={isPasswordSetup}
+                  autoComplete="username"
                   required
                 />
               </span>
             </label>
-          )}
 
-          {error && <p className="admin-form-error">{error}</p>}
+            <label>
+              <span>{isPasswordSetup ? "Create password" : "Password"}</span>
+              <span className="admin-input-wrap">
+                <LockKey aria-hidden="true" size={20} />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete={
+                    isPasswordSetup ? "new-password" : "current-password"
+                  }
+                  minLength={isPasswordSetup ? 10 : undefined}
+                  required
+                />
+              </span>
+            </label>
 
-          <button className="admin-primary-button admin-auth-submit" type="submit">
-            {isSubmitting
-              ? "Please wait..."
-              : hasPassword
-                ? "Sign in to dashboard"
-                : "Create password and continue"}
-          </button>
-        </form>
+            {isPasswordSetup && (
+              <label>
+                <span>Confirm password</span>
+                <span className="admin-input-wrap">
+                  <CheckCircle aria-hidden="true" size={20} />
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    autoComplete="new-password"
+                    minLength={10}
+                    required
+                  />
+                </span>
+              </label>
+            )}
+
+            {(error || statusMessage) && (
+              <p className="admin-form-error">{error || statusMessage}</p>
+            )}
+            {notice && <p className="admin-form-notice">{notice}</p>}
+
+            <button
+              className="admin-primary-button admin-auth-submit"
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting
+                ? "Please wait..."
+                : isPasswordSetup
+                  ? "Save password and continue"
+                  : "Sign in to dashboard"}
+            </button>
+            {!isPasswordSetup && (
+              <button
+                className="admin-auth-reset"
+                type="button"
+                onClick={handlePasswordReset}
+                disabled={isSubmitting}
+              >
+                Forgot your password?
+              </button>
+            )}
+          </form>
+        )}
 
         <aside className="admin-security-note">
           <ShieldCheck aria-hidden="true" size={22} />
           <p>
-            This prototype stores only a one-way password hash in this browser.
-            Production email delivery and multi-device login require a secure
-            server-side authentication and email service.
+            Authentication is handled by Supabase. Passwords are never stored in
+            this website or sent by email, and administrator access is verified
+            against the protected database role.
           </p>
         </aside>
       </section>
