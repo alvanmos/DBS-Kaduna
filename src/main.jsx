@@ -1,8 +1,12 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.jsx";
+import { NewsPage } from "./news/NewsPage.jsx";
 import "./styles.css";
 
+const isNewsRoute =
+  window.location.pathname === "/news" ||
+  window.location.pathname.startsWith("/news/");
 const isAdminRoute =
   window.location.pathname === "/admin" ||
   window.location.pathname.startsWith("/admin/") ||
@@ -15,13 +19,14 @@ const AdminPortal = React.lazy(() =>
     default: module.AdminPortal,
   })),
 );
-
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     {isAdminRoute ? (
       <React.Suspense fallback={null}>
         <AdminPortal />
       </React.Suspense>
+    ) : isNewsRoute ? (
+      <NewsPage />
     ) : (
       <App />
     )}

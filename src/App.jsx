@@ -11,6 +11,11 @@ import {
   UsersThree,
   WhatsappLogo,
 } from "@phosphor-icons/react";
+import {
+  isWithinNewsAlertWindow,
+  loadPublishedNews,
+  millisecondsUntilNewsAlertExpires,
+} from "./news/publicNews.js";
 
 const GUIDE_COUNT = 26;
 const dbsKadunaLogo = "/dbs-kaduna-logo.png?v=20260614";
@@ -216,6 +221,36 @@ export function App() {
   const [activeLoginMenu, setActiveLoginMenu] = useState(null);
   const [isCarouselPaused, setIsCarouselPaused] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [hasRecentNews, setHasRecentNews] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let expiryTimer;
+
+    loadPublishedNews({ limit: 1, signal: controller.signal })
+      .then(([latestNews]) => {
+        if (!latestNews?.publishedAt) return;
+
+        setHasRecentNews(isWithinNewsAlertWindow(latestNews.publishedAt));
+        const remainingTime = millisecondsUntilNewsAlertExpires(
+          latestNews.publishedAt,
+        );
+        if (remainingTime > 0) {
+          expiryTimer = window.setTimeout(
+            () => setHasRecentNews(false),
+            remainingTime,
+          );
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setHasRecentNews(false);
+      });
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(expiryTimer);
+    };
+  }, []);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -287,9 +322,24 @@ export function App() {
           </a>
         </nav>
 
-        <a className="news-button" href="#news" id="news">
+        <a
+          className={
+            hasRecentNews
+              ? "news-button news-button--recent"
+              : "news-button"
+          }
+          href="/news"
+          target="_blank"
+          rel="noreferrer"
+          aria-label={
+            hasRecentNews
+              ? "Open newly published DBS Kaduna news in a new window"
+              : "Open DBS Kaduna news in a new window"
+          }
+        >
           <Newspaper aria-hidden="true" size={20} weight="bold" />
           <span>News</span>
+          {hasRecentNews && <small>New</small>}
         </a>
       </header>
 
