@@ -55,6 +55,20 @@
   box-shadow: var(--admin-shadow);
 }
 
+.admin-auth-card--loading {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  color: var(--admin-muted);
+  text-align: center;
+}
+
+.admin-auth-card--loading img {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+}
+
 .admin-auth-brand {
   margin-bottom: 30px;
   display: flex;
@@ -182,6 +196,16 @@
   font-weight: 650;
 }
 
+.admin-form-notice {
+  margin: -4px 0 0;
+  padding: 11px 13px;
+  color: #0a7040;
+  background: var(--admin-green-soft);
+  border-radius: 8px;
+  font-size: 0.87rem;
+  font-weight: 650;
+}
+
 .admin-primary-button,
 .admin-secondary-button,
 .admin-upload-button {
@@ -215,6 +239,12 @@
   transform: translateY(-1px);
 }
 
+.admin-primary-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+  transform: none;
+}
+
 .admin-secondary-button {
   color: var(--admin-blue);
   background: #ffffff;
@@ -230,6 +260,23 @@
   min-height: 52px;
   margin-top: 2px;
   font-size: 0.98rem;
+}
+
+.admin-auth-reset {
+  justify-self: center;
+  padding: 3px;
+  color: var(--admin-blue);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-auth-reset:disabled {
+  cursor: wait;
+  opacity: 0.6;
 }
 
 .admin-security-note,

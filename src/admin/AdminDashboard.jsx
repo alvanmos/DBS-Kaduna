@@ -41,10 +41,12 @@ const sectionIcons = {
   news: Newspaper,
 };
 
-const today = () => new Date().toISOString().slice(0, 10);
-
 function countWhere(items, predicate) {
   return items.filter(predicate).length;
+}
+
+function readableError(error) {
+  return error?.message || "The secure operation could not be completed.";
 }
 
 function escapeCell(value) {
@@ -155,7 +157,7 @@ function DashboardSummary({ students, instructors }) {
         <MetricCard
           label="Total students"
           value={summary.totalStudents}
-          detail={`${summary.activeStudents} active · ${summary.inactiveStudents} inactive`}
+          detail={`${summary.activeStudents} active / ${summary.inactiveStudents} inactive`}
           Icon={GraduationCap}
           tone="blue"
         />
@@ -282,7 +284,7 @@ function DashboardSummary({ students, instructors }) {
 function StudentManagement({
   students,
   instructors,
-  onStudentsChange,
+  onAssignStudent,
   onNotify,
 }) {
   const [query, setQuery] = useState("");
@@ -297,15 +299,13 @@ function StudentManagement({
   const selectedStudent =
     students.find((student) => student.id === selectedStudentId) ?? students[0];
 
-  function assignInstructor(studentId, instructorId) {
-    onStudentsChange(
-      students.map((student) =>
-        student.id === studentId
-          ? { ...student, instructorId: instructorId || null }
-          : student,
-      ),
-    );
-    onNotify("Student assignment updated.");
+  async function assignInstructor(studentId, instructorId) {
+    try {
+      await onAssignStudent(studentId, instructorId);
+      onNotify("Student assignment updated.");
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    }
   }
 
   const mapCenter = selectedStudent?.location ?? {
@@ -525,21 +525,37 @@ function StudentManagement({
 function InstructorManagement({
   instructors,
   students,
-  onInstructorsChange,
+  onApproveInstructor,
+  onUpdateInstructor,
   onNotify,
 }) {
+  const [capacityById, setCapacityById] = useState(() =>
+    Object.fromEntries(
+      instructors.map((instructor) => [instructor.id, instructor.maxLoad]),
+    ),
+  );
   const studentLoad = (instructorId) =>
     countWhere(students, (student) => student.instructorId === instructorId);
 
-  function updateInstructor(instructorId, changes, message) {
-    onInstructorsChange(
-      instructors.map((instructor) =>
-        instructor.id === instructorId
-          ? { ...instructor, ...changes }
-          : instructor,
-      ),
-    );
-    onNotify(message);
+  async function updateInstructor(instructorId, changes, message) {
+    try {
+      await onUpdateInstructor(instructorId, changes);
+      onNotify(message);
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    }
+  }
+
+  async function approveApplication(instructor) {
+    try {
+      await onApproveInstructor(
+        instructor.applicationId,
+        Number(capacityById[instructor.id] ?? 10),
+      );
+      onNotify(`${instructor.name} approved as an instructor.`);
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    }
   }
 
   return (
@@ -599,11 +615,23 @@ function InstructorManagement({
                         type="number"
                         min="1"
                         max="50"
-                        value={instructor.maxLoad}
+                        value={capacityById[instructor.id] ?? instructor.maxLoad}
                         onChange={(event) =>
+                          setCapacityById((current) => ({
+                            ...current,
+                            [instructor.id]: event.target.value,
+                          }))
+                        }
+                        onBlur={() =>
+                          instructor.approval === "Approved" &&
                           updateInstructor(
                             instructor.id,
-                            { maxLoad: Number(event.target.value) },
+                            {
+                              maxLoad: Number(
+                                capacityById[instructor.id] ??
+                                  instructor.maxLoad,
+                              ),
+                            },
                             "Instructor capacity updated.",
                           )
                         }
@@ -613,13 +641,7 @@ function InstructorManagement({
                       <button
                         className="admin-primary-button"
                         type="button"
-                        onClick={() =>
-                          updateInstructor(
-                            instructor.id,
-                            { approval: "Approved", status: "Active" },
-                            `${instructor.name} approved as an instructor.`,
-                          )
-                        }
+                        onClick={() => approveApplication(instructor)}
                       >
                         <UserCheck aria-hidden="true" size={19} />
                         Approve registration
@@ -664,26 +686,19 @@ function InstructorManagement({
   );
 }
 
-function LessonManagement({ lessons, onLessonsChange, onNotify }) {
-  function uploadLesson(lessonId, file) {
+function LessonManagement({ lessons, onUploadLesson, onNotify }) {
+  async function uploadLesson(lessonNumber, file) {
     if (!file) return;
     if (file.type !== "application/pdf") {
       onNotify("Only PDF lesson files are accepted.", "error");
       return;
     }
-    onLessonsChange(
-      lessons.map((lesson) =>
-        lesson.id === lessonId
-          ? {
-              ...lesson,
-              status: "Uploaded",
-              fileName: file.name,
-              uploadedAt: today(),
-            }
-          : lesson,
-      ),
-    );
-    onNotify("Lesson PDF uploaded.");
+    try {
+      await onUploadLesson(lessonNumber, file);
+      onNotify("Lesson PDF uploaded securely.");
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    }
   }
 
   return (
@@ -728,7 +743,7 @@ function LessonManagement({ lessons, onLessonsChange, onNotify }) {
                 type="file"
                 accept="application/pdf,.pdf"
                 onChange={(event) =>
-                  uploadLesson(lesson.id, event.target.files?.[0])
+                  uploadLesson(lesson.number, event.target.files?.[0])
                 }
               />
             </label>
@@ -742,51 +757,58 @@ function LessonManagement({ lessons, onLessonsChange, onNotify }) {
 function QuestionManagement({
   questions,
   instructors,
-  onQuestionsChange,
+  onAddQuestion,
+  onMoveQuestion,
+  onDeleteQuestion,
   onNotify,
 }) {
   const [lesson, setLesson] = useState(1);
   const [type, setType] = useState("Multiple choice");
-  const [marker, setMarker] = useState("Auto-mark");
+  const [marker, setMarker] = useState("");
   const [prompt, setPrompt] = useState("");
 
   const lessonQuestions = questions
     .filter((question) => question.lesson === Number(lesson))
     .sort((a, b) => a.order - b.order);
 
-  function addQuestion(event) {
+  async function addQuestion(event) {
     event.preventDefault();
     if (!prompt.trim()) return;
-    onQuestionsChange([
-      ...questions,
-      {
-        id: `question-${Date.now()}`,
+    try {
+      await onAddQuestion({
         lesson: Number(lesson),
         order: lessonQuestions.length + 1,
         type,
-        marker,
+        markerId: marker || null,
         prompt: prompt.trim(),
-      },
-    ]);
-    setPrompt("");
-    onNotify("Question added to the lesson.");
+      });
+      setPrompt("");
+      onNotify("Question added to the lesson.");
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    }
   }
 
-  function moveQuestion(questionId, direction) {
+  async function moveQuestion(questionId, direction) {
     const currentIndex = lessonQuestions.findIndex(
       (question) => question.id === questionId,
     );
     const targetIndex = currentIndex + direction;
     if (targetIndex < 0 || targetIndex >= lessonQuestions.length) return;
-    const current = lessonQuestions[currentIndex];
-    const target = lessonQuestions[targetIndex];
-    onQuestionsChange(
-      questions.map((question) => {
-        if (question.id === current.id) return { ...question, order: target.order };
-        if (question.id === target.id) return { ...question, order: current.order };
-        return question;
-      }),
-    );
+    try {
+      await onMoveQuestion(questionId, direction);
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    }
+  }
+
+  async function removeQuestion(questionId) {
+    try {
+      await onDeleteQuestion(questionId);
+      onNotify("Question removed.");
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    }
   }
 
   return (
@@ -830,11 +852,17 @@ function QuestionManagement({
                 value={marker}
                 onChange={(event) => setMarker(event.target.value)}
               >
-                <option>Auto-mark</option>
+                <option value="">Auto-mark</option>
                 {instructors
-                  .filter((instructor) => instructor.status === "Active")
+                  .filter(
+                    (instructor) =>
+                      instructor.status === "Active" &&
+                      instructor.approval === "Approved",
+                  )
                   .map((instructor) => (
-                    <option key={instructor.id}>{instructor.name}</option>
+                    <option key={instructor.id} value={instructor.id}>
+                      {instructor.name}
+                    </option>
                   ))}
               </select>
             </label>
@@ -892,12 +920,7 @@ function QuestionManagement({
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        onQuestionsChange(
-                          questions.filter((item) => item.id !== question.id),
-                        );
-                        onNotify("Question removed.");
-                      }}
+                      onClick={() => removeQuestion(question.id)}
                       aria-label={`Delete question ${index + 1}`}
                     >
                       <X aria-hidden="true" size={17} />
@@ -918,7 +941,7 @@ function QuestionManagement({
 function CertificateManagement({
   certificates,
   students,
-  onCertificatesChange,
+  onIssueCertificate,
   onNotify,
 }) {
   const eligibleStudents = students.filter(
@@ -929,23 +952,15 @@ function CertificateManagement({
   const [studentId, setStudentId] = useState(eligibleStudents[0]?.id ?? "");
   const [verificationCode, setVerificationCode] = useState("");
 
-  function generateCertificate() {
+  async function generateCertificate() {
     if (!studentId) return;
-    const code = `DBS-KD-CERT-${new Date().getFullYear().toString().slice(-2)}${String(
-      certificates.length + 1,
-    ).padStart(3, "0")}`;
-    onCertificatesChange([
-      ...certificates,
-      {
-        id: `certificate-${Date.now()}`,
-        studentId,
-        code,
-        issuedAt: today(),
-        status: "Verified",
-      },
-    ]);
-    setVerificationCode(code);
-    onNotify("Digital certificate generated.");
+    try {
+      const certificate = await onIssueCertificate(studentId);
+      setVerificationCode(certificate?.verification_code ?? "");
+      onNotify("Digital certificate generated.");
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    }
   }
 
   const verifiedCertificate = certificates.find(
@@ -1214,31 +1229,38 @@ function Reports({ students, instructors, certificates, onNotify }) {
   );
 }
 
-function NewsManagement({ news, onNewsChange, onNotify }) {
+function NewsManagement({ news, onPublishNews, onDeleteNews, onNotify }) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [mediaType, setMediaType] = useState("Text");
-  const [mediaName, setMediaName] = useState("");
+  const [mediaFile, setMediaFile] = useState(null);
 
-  function publishNews(event) {
+  async function publishNewsItem(event) {
     event.preventDefault();
-    onNewsChange([
-      {
-        id: `news-${Date.now()}`,
+    try {
+      await onPublishNews({
         title: title.trim(),
         body: body.trim(),
         mediaType,
-        mediaName,
-        status: "Published",
-        publishedAt: today(),
-      },
-      ...news,
-    ]);
-    setTitle("");
-    setBody("");
-    setMediaType("Text");
-    setMediaName("");
-    onNotify("News item published.");
+        mediaFile,
+      });
+      setTitle("");
+      setBody("");
+      setMediaType("Text");
+      setMediaFile(null);
+      onNotify("News item published.");
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    }
+  }
+
+  async function removeNewsItem(item) {
+    try {
+      await onDeleteNews(item);
+      onNotify("News item removed.");
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    }
   }
 
   return (
@@ -1256,7 +1278,7 @@ function NewsManagement({ news, onNewsChange, onNotify }) {
               <p>Published items are ready for the public News area.</p>
             </div>
           </div>
-          <form className="admin-form-grid" onSubmit={publishNews}>
+          <form className="admin-form-grid" onSubmit={publishNewsItem}>
             <label className="admin-form-grid__wide">
               Headline
               <input
@@ -1294,7 +1316,7 @@ function NewsManagement({ news, onNewsChange, onNotify }) {
                   type="file"
                   accept={mediaType === "Photo" ? "image/*" : "video/*"}
                   onChange={(event) =>
-                    setMediaName(event.target.files?.[0]?.name ?? "")
+                    setMediaFile(event.target.files?.[0] ?? null)
                   }
                   required
                 />
@@ -1334,10 +1356,7 @@ function NewsManagement({ news, onNewsChange, onNotify }) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    onNewsChange(news.filter((entry) => entry.id !== item.id));
-                    onNotify("News item removed.");
-                  }}
+                  onClick={() => removeNewsItem(item)}
                   aria-label={`Remove ${item.title}`}
                 >
                   <X aria-hidden="true" size={18} />
@@ -1354,7 +1373,7 @@ function NewsManagement({ news, onNewsChange, onNotify }) {
 export function AdminDashboard({
   adminEmail,
   data,
-  onDataChange,
+  actions,
   onSignOut,
 }) {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -1381,10 +1400,6 @@ export function AdminDashboard({
     [data],
   );
 
-  function updateData(key, value) {
-    onDataChange({ ...data, [key]: value });
-  }
-
   function notify(message, tone = "success") {
     setToast({ message, tone });
     window.clearTimeout(toastTimerRef.current);
@@ -1408,7 +1423,7 @@ export function AdminDashboard({
       <StudentManagement
         students={data.students}
         instructors={data.instructors}
-        onStudentsChange={(students) => updateData("students", students)}
+        onAssignStudent={actions.assignStudent}
         onNotify={notify}
       />
     );
@@ -1417,9 +1432,8 @@ export function AdminDashboard({
       <InstructorManagement
         instructors={data.instructors}
         students={data.students}
-        onInstructorsChange={(instructors) =>
-          updateData("instructors", instructors)
-        }
+        onApproveInstructor={actions.approveInstructor}
+        onUpdateInstructor={actions.updateInstructor}
         onNotify={notify}
       />
     );
@@ -1427,7 +1441,7 @@ export function AdminDashboard({
     content = (
       <LessonManagement
         lessons={data.lessons}
-        onLessonsChange={(lessons) => updateData("lessons", lessons)}
+        onUploadLesson={actions.uploadLesson}
         onNotify={notify}
       />
     );
@@ -1436,7 +1450,9 @@ export function AdminDashboard({
       <QuestionManagement
         questions={data.questions}
         instructors={data.instructors}
-        onQuestionsChange={(questions) => updateData("questions", questions)}
+        onAddQuestion={actions.addQuestion}
+        onMoveQuestion={actions.moveQuestion}
+        onDeleteQuestion={actions.deleteQuestion}
         onNotify={notify}
       />
     );
@@ -1445,9 +1461,7 @@ export function AdminDashboard({
       <CertificateManagement
         certificates={data.certificates}
         students={data.students}
-        onCertificatesChange={(certificates) =>
-          updateData("certificates", certificates)
-        }
+        onIssueCertificate={actions.issueCertificate}
         onNotify={notify}
       />
     );
@@ -1464,7 +1478,8 @@ export function AdminDashboard({
     content = (
       <NewsManagement
         news={data.news}
-        onNewsChange={(news) => updateData("news", news)}
+        onPublishNews={actions.publishNews}
+        onDeleteNews={actions.deleteNews}
         onNotify={notify}
       />
     );

@@ -2,6 +2,7 @@ node_modules/
 dist/
 .npm-cache/
 .vite/
+.env*.local
 *.log
 .vite-server.pid
 .chrome-cdp.pid
