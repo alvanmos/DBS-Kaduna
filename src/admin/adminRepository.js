@@ -6,6 +6,8 @@ const emptyData = {
   lessons: [],
   questions: [],
   certificates: [],
+  recruitmentCampaigns: [],
+  recruitmentEnrolments: [],
   news: [],
 };
 
@@ -49,7 +51,34 @@ function safeFileName(fileName) {
     .replace(/-+/g, "-");
 }
 
+function isMissingRecruitmentSchema(error) {
+  return (
+    error?.code === "42P01" ||
+    error?.code === "PGRST205" ||
+    error?.message?.includes("recruitment_campaigns") ||
+    error?.message?.includes("recruitment_enrolments")
+  );
+}
+
+async function loadRecruitmentData() {
+  const [campaignResult, enrolmentResult] = await Promise.all([
+    supabase
+      .from("recruitment_campaigns")
+      .select("*")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("recruitment_enrolments")
+      .select("*")
+      .order("submitted_at", { ascending: false }),
+  ]);
+
+  const schemaError = campaignResult.error || enrolmentResult.error;
+  if (schemaError && isMissingRecruitmentSchema(schemaError)) return [[], []];
+  return [throwIfError(campaignResult), throwIfError(enrolmentResult)];
+}
+
 export async function loadAdminData() {
+  const recruitmentDataPromise = loadRecruitmentData();
   const [
     profiles,
     applications,
@@ -87,6 +116,8 @@ export async function loadAdminData() {
       ascending: false,
     }),
   ]).then((results) => results.map(throwIfError));
+  const [recruitmentCampaigns, recruitmentEnrolments] =
+    await recruitmentDataPromise;
 
   const profilesById = new Map(profiles.map((profile) => [profile.id, profile]));
   const instructorNames = new Map();
@@ -195,6 +226,28 @@ export async function loadAdminData() {
     status: certificate.revoked_at ? "Revoked" : "Verified",
   }));
 
+  const mappedRecruitmentEnrolments = recruitmentEnrolments.map((item) => ({
+    id: item.id,
+    campaignId: item.campaign_id,
+    recruitmentKind: item.recruitment_kind,
+    name: item.full_name,
+    phone: item.phone,
+    address: item.address,
+    submittedAt: dateOnly(item.submitted_at),
+  }));
+
+  const mappedRecruitmentCampaigns = recruitmentCampaigns.map((campaign) => ({
+    id: campaign.id,
+    name: campaign.name,
+    recruitmentKind: campaign.recruitment_kind,
+    slug: campaign.slug,
+    status: campaign.is_active ? "Active" : "Inactive",
+    createdAt: dateOnly(campaign.created_at),
+    enrolmentCount: mappedRecruitmentEnrolments.filter(
+      (item) => item.campaignId === campaign.id,
+    ).length,
+  }));
+
   const mappedNews = news.map((item) => ({
     id: item.id,
     title: item.title,
@@ -212,6 +265,8 @@ export async function loadAdminData() {
     lessons: mappedLessons,
     questions: mappedQuestions,
     certificates: mappedCertificates,
+    recruitmentCampaigns: mappedRecruitmentCampaigns,
+    recruitmentEnrolments: mappedRecruitmentEnrolments,
     news: mappedNews,
   };
 }
@@ -315,6 +370,31 @@ export async function issueCertificate(studentId) {
       input_student_id: studentId,
     }),
   );
+}
+
+function recruitmentCampaignSlug(name) {
+  const readable = name
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 54);
+  const suffix = crypto.randomUUID().replaceAll("-", "").slice(0, 8);
+  return `${readable || "campaign"}-${suffix}`;
+}
+
+export async function createRecruitmentCampaign({ name, recruitmentKind }) {
+  const result = await supabase
+    .from("recruitment_campaigns")
+    .insert({
+      name,
+      recruitment_kind: recruitmentKind,
+      slug: recruitmentCampaignSlug(name),
+    })
+    .select("*")
+    .single();
+  return throwIfError(result);
 }
 
 export async function publishNews({ title, body, mediaType, mediaFile }) {

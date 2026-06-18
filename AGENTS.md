@@ -27,3 +27,11 @@ When implementing from a selected generated mock, treat that image as the source
 - Treat the current browser-persisted data and password setup as prototype behavior only.
 - Production authentication, private file delivery, shared records, and password email
   delivery require a secure backend and transactional email provider.
+
+## Recruitment and News Direction
+
+- Keep student and volunteer instructor registration on role-specific shared forms.
+- Let administrators create named, trackable QR recruitment campaigns for either role.
+- Keep campaign enrollee names, phone numbers, addresses, and export controls visible only in administration.
+- Show the latest published news headline and date as moving text immediately above the homepage title.
+- Blink the homepage News control for seven days after the newest publication, while respecting reduced-motion preferences.

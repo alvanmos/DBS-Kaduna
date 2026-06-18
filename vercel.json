@@ -13,6 +13,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/register/:path*",
+      "destination": "/index.html"
+    },
+    {
       "source": "/news",
       "destination": "/index.html"
     },

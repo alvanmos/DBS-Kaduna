@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import QRCode from "qrcode";
 import {
   ArrowDown,
   ArrowUp,
@@ -9,6 +10,7 @@ import {
   Check,
   CheckCircle,
   Clock,
+  Copy,
   DownloadSimple,
   FilePdf,
   Gauge,
@@ -19,6 +21,7 @@ import {
   Newspaper,
   Plus,
   Question,
+  QrCode,
   SignOut,
   Student,
   UploadSimple,
@@ -39,6 +42,7 @@ const sectionIcons = {
   certificates: Certificate,
   reports: ChartBar,
   news: Newspaper,
+  recruitment: QrCode,
 };
 
 function countWhere(items, predicate) {
@@ -1229,6 +1233,309 @@ function Reports({ students, instructors, certificates, onNotify }) {
   );
 }
 
+function recruitmentKindLabel(kind) {
+  return kind === "student" ? "Student" : "Volunteer instructor";
+}
+
+function RecruitmentManagement({
+  campaigns,
+  enrolments,
+  onCreateCampaign,
+  onNotify,
+}) {
+  const [campaignName, setCampaignName] = useState("");
+  const [recruitmentKind, setRecruitmentKind] = useState("student");
+  const [selectedCampaignId, setSelectedCampaignId] = useState(
+    campaigns[0]?.id ?? "",
+  );
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+
+  useEffect(() => {
+    if (
+      campaigns.length > 0 &&
+      !campaigns.some((campaign) => campaign.id === selectedCampaignId)
+    ) {
+      setSelectedCampaignId(campaigns[0].id);
+    }
+  }, [campaigns, selectedCampaignId]);
+
+  const selectedCampaign =
+    campaigns.find((campaign) => campaign.id === selectedCampaignId) ??
+    campaigns[0];
+  const selectedEnrolments = selectedCampaign
+    ? enrolments.filter((item) => item.campaignId === selectedCampaign.id)
+    : [];
+  const campaignPath = selectedCampaign
+    ? selectedCampaign.recruitmentKind === "student"
+      ? "/register/student"
+      : "/register/volunteer-instructor"
+    : "";
+  const campaignUrl = selectedCampaign
+    ? `${window.location.origin}${campaignPath}?campaign=${encodeURIComponent(
+        selectedCampaign.slug,
+      )}`
+    : "";
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!campaignUrl) {
+      setQrDataUrl("");
+      return undefined;
+    }
+
+    QRCode.toDataURL(campaignUrl, {
+      width: 360,
+      margin: 2,
+      errorCorrectionLevel: "M",
+      color: { dark: "#071c45", light: "#ffffff" },
+    })
+      .then((dataUrl) => {
+        if (!cancelled) setQrDataUrl(dataUrl);
+      })
+      .catch((error) => {
+        if (!cancelled) onNotify(readableError(error), "error");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [campaignUrl, onNotify]);
+
+  async function createCampaign(event) {
+    event.preventDefault();
+    setIsCreating(true);
+    try {
+      const created = await onCreateCampaign({
+        name: campaignName.trim(),
+        recruitmentKind,
+      });
+      setCampaignName("");
+      setSelectedCampaignId(created.id);
+      onNotify("Recruitment campaign and QR code created.");
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    } finally {
+      setIsCreating(false);
+    }
+  }
+
+  async function copyCampaignLink() {
+    try {
+      await navigator.clipboard.writeText(campaignUrl);
+      onNotify("Campaign link copied.");
+    } catch {
+      onNotify("The campaign link could not be copied automatically.", "error");
+    }
+  }
+
+  function downloadQrCode() {
+    if (!selectedCampaign || !qrDataUrl) return;
+    const anchor = document.createElement("a");
+    anchor.href = qrDataUrl;
+    anchor.download = `${selectedCampaign.slug}-qr-code.png`;
+    anchor.click();
+    onNotify("QR code downloaded.");
+  }
+
+  return (
+    <>
+      <PageHeading
+        eyebrow="Recruitment"
+        title="QR recruitment campaigns"
+        description="Create trackable QR codes for student and volunteer instructor recruitment, then review every enrolment from each effort."
+      />
+
+      <div className="admin-recruitment-grid">
+        <section className="admin-panel">
+          <div className="admin-panel-heading">
+            <div>
+              <h3>Create campaign</h3>
+              <p>Each campaign gets a unique registration link and QR code.</p>
+            </div>
+          </div>
+          <form className="admin-form-grid" onSubmit={createCampaign}>
+            <label className="admin-form-grid__wide">
+              Campaign name
+              <input
+                value={campaignName}
+                onChange={(event) => setCampaignName(event.target.value)}
+                placeholder="e.g. Kaduna Central July Outreach"
+                minLength="2"
+                required
+              />
+            </label>
+            <label className="admin-form-grid__wide">
+              Recruitment type
+              <select
+                value={recruitmentKind}
+                onChange={(event) => setRecruitmentKind(event.target.value)}
+              >
+                <option value="student">Student recruitment</option>
+                <option value="volunteer_instructor">
+                  Volunteer instructor recruitment
+                </option>
+              </select>
+            </label>
+            <button
+              className="admin-primary-button"
+              type="submit"
+              disabled={isCreating}
+            >
+              <QrCode aria-hidden="true" size={20} />
+              {isCreating ? "Generating..." : "Generate QR code"}
+            </button>
+          </form>
+
+          <div className="admin-campaign-list">
+            <div className="admin-panel-heading">
+              <div>
+                <h3>Campaigns</h3>
+                <p>{campaigns.length} trackable recruitment efforts.</p>
+              </div>
+            </div>
+            {campaigns.length === 0 ? (
+              <EmptyState>Create the first campaign to generate a QR code.</EmptyState>
+            ) : (
+              campaigns.map((campaign) => (
+                <button
+                  className={campaign.id === selectedCampaign?.id ? "is-active" : ""}
+                  type="button"
+                  key={campaign.id}
+                  onClick={() => setSelectedCampaignId(campaign.id)}
+                >
+                  <span>
+                    <strong>{campaign.name}</strong>
+                    <small>
+                      {recruitmentKindLabel(campaign.recruitmentKind)} ·{" "}
+                      {campaign.createdAt}
+                    </small>
+                  </span>
+                  <StatusBadge tone={campaign.enrolmentCount > 0 ? "green" : "blue"}>
+                    {campaign.enrolmentCount} enrolled
+                  </StatusBadge>
+                </button>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className="admin-panel admin-qr-preview">
+          <div className="admin-panel-heading">
+            <div>
+              <h3>Campaign QR code</h3>
+              <p>Share digitally or download for posters and printed materials.</p>
+            </div>
+          </div>
+          {selectedCampaign ? (
+            <>
+              <div className="admin-qr-card">
+                {qrDataUrl ? (
+                  <img
+                    src={qrDataUrl}
+                    alt={`QR code for ${selectedCampaign.name}`}
+                  />
+                ) : (
+                  <div className="admin-qr-loading">Generating QR code...</div>
+                )}
+                <strong>{selectedCampaign.name}</strong>
+                <span>{recruitmentKindLabel(selectedCampaign.recruitmentKind)}</span>
+              </div>
+              <label className="admin-campaign-link">
+                Registration link
+                <input value={campaignUrl} readOnly onFocus={(event) => event.target.select()} />
+              </label>
+              <div className="admin-qr-actions">
+                <button
+                  className="admin-secondary-button"
+                  type="button"
+                  onClick={copyCampaignLink}
+                >
+                  <Copy aria-hidden="true" size={18} />
+                  Copy link
+                </button>
+                <button
+                  className="admin-primary-button"
+                  type="button"
+                  onClick={downloadQrCode}
+                  disabled={!qrDataUrl}
+                >
+                  <DownloadSimple aria-hidden="true" size={18} />
+                  Download QR
+                </button>
+              </div>
+            </>
+          ) : (
+            <EmptyState>Select or create a campaign to preview its QR code.</EmptyState>
+          )}
+        </section>
+      </div>
+
+      <section className="admin-panel admin-recruitment-enrolments">
+        <div className="admin-panel-heading">
+          <div>
+            <h3>Campaign enrolments</h3>
+            <p>
+              {selectedCampaign
+                ? `${selectedEnrolments.length} people enrolled through ${selectedCampaign.name}.`
+                : "Select a campaign to see the people who enrolled through it."}
+            </p>
+          </div>
+          {selectedCampaign && selectedEnrolments.length > 0 && (
+            <button
+              className="admin-secondary-button"
+              type="button"
+              onClick={() => {
+                exportExcelFile(
+                  `${selectedCampaign.slug}-enrolments`,
+                  `${selectedCampaign.name} enrolments`,
+                  [
+                    { key: "name", label: "Name" },
+                    { key: "phone", label: "Phone number" },
+                    { key: "address", label: "Address" },
+                    { key: "submittedAt", label: "Date enrolled" },
+                  ],
+                  selectedEnrolments,
+                );
+                onNotify("Campaign enrolments exported.");
+              }}
+            >
+              <DownloadSimple aria-hidden="true" size={18} />
+              Export enrolments
+            </button>
+          )}
+        </div>
+        {selectedEnrolments.length === 0 ? (
+          <EmptyState>No enrolments have been received through this campaign yet.</EmptyState>
+        ) : (
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Phone number</th>
+                  <th>Address</th>
+                  <th>Date enrolled</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedEnrolments.map((item) => (
+                  <tr key={item.id}>
+                    <td><strong>{item.name}</strong></td>
+                    <td>{item.phone}</td>
+                    <td>{item.address}</td>
+                    <td>{item.submittedAt}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
+
 function NewsManagement({ news, onPublishNews, onDeleteNews, onNotify }) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -1395,6 +1702,7 @@ export function AdminDashboard({
       lessons: countWhere(data.lessons, (lesson) => lesson.status !== "Uploaded"),
       questions: data.questions.length,
       certificates: data.certificates.length,
+      recruitment: data.recruitmentEnrolments.length,
       news: data.news.length,
     }),
     [data],
@@ -1471,6 +1779,15 @@ export function AdminDashboard({
         students={data.students}
         instructors={data.instructors}
         certificates={data.certificates}
+        onNotify={notify}
+      />
+    );
+  } else if (activeSection === "recruitment") {
+    content = (
+      <RecruitmentManagement
+        campaigns={data.recruitmentCampaigns}
+        enrolments={data.recruitmentEnrolments}
+        onCreateCampaign={actions.createRecruitmentCampaign}
         onNotify={notify}
       />
     );
