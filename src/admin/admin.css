@@ -1144,7 +1144,8 @@
 .admin-form-grid select,
 .admin-form-grid textarea,
 .admin-certificate-generator select,
-.admin-verification-field input {
+.admin-verification-field input,
+.admin-campaign-link input {
   width: 100%;
   min-height: 43px;
   padding: 9px 11px;
@@ -1165,7 +1166,8 @@
 .admin-form-grid select:focus,
 .admin-form-grid textarea:focus,
 .admin-certificate-generator select:focus,
-.admin-verification-field input:focus {
+.admin-verification-field input:focus,
+.admin-campaign-link input:focus {
   border-color: var(--admin-blue);
   box-shadow: 0 0 0 4px rgb(12 77 162 / 10%);
 }
@@ -1377,6 +1379,138 @@
   font-weight: 750;
 }
 
+.admin-recruitment-grid {
+  margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr);
+  gap: 20px;
+}
+
+.admin-campaign-list {
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid var(--admin-line);
+}
+
+.admin-campaign-list > button {
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--admin-ink);
+  background: #f8fafc;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-campaign-list > button:hover,
+.admin-campaign-list > button.is-active {
+  background: #f2f7fd;
+  border-color: #8bb3dd;
+}
+
+.admin-campaign-list > button span:first-child {
+  min-width: 0;
+}
+
+.admin-campaign-list > button strong,
+.admin-campaign-list > button small {
+  display: block;
+}
+
+.admin-campaign-list > button strong {
+  overflow: hidden;
+  color: var(--admin-navy);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-campaign-list > button small {
+  margin-top: 4px;
+  color: var(--admin-muted);
+  font-size: 0.67rem;
+}
+
+.admin-qr-preview {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-qr-card {
+  width: min(100%, 360px);
+  margin: 0 auto 18px;
+  padding: 18px;
+  display: grid;
+  justify-items: center;
+  background: #f8fafc;
+  border: 1px solid var(--admin-line);
+  border-radius: 14px;
+  text-align: center;
+}
+
+.admin-qr-card img,
+.admin-qr-loading {
+  width: min(100%, 260px);
+  aspect-ratio: 1;
+}
+
+.admin-qr-card img {
+  padding: 8px;
+  background: #ffffff;
+  border-radius: 9px;
+}
+
+.admin-qr-loading {
+  display: grid;
+  place-items: center;
+  color: var(--admin-muted);
+  background: #ffffff;
+  border: 1px dashed #cbd4df;
+  border-radius: 9px;
+  font-size: 0.75rem;
+}
+
+.admin-qr-card strong {
+  margin-top: 14px;
+  color: var(--admin-navy);
+  font-size: 0.9rem;
+}
+
+.admin-qr-card > span {
+  margin-top: 4px;
+  color: var(--admin-green);
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.admin-campaign-link {
+  color: var(--admin-ink);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.admin-campaign-link input {
+  margin-top: 7px;
+  font-size: 0.72rem;
+}
+
+.admin-qr-actions {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.admin-recruitment-enrolments {
+  margin-bottom: 20px;
+}
+
 .admin-news-list {
   display: grid;
   gap: 10px;
@@ -1505,7 +1639,8 @@
   }
 
   .admin-two-column,
-  .admin-two-column--student {
+  .admin-two-column--student,
+  .admin-recruitment-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1606,6 +1741,10 @@
   .admin-student-profile dl,
   .admin-form-grid,
   .admin-location-list {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-qr-actions {
     grid-template-columns: 1fr;
   }
 

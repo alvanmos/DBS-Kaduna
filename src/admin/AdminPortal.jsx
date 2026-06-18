@@ -6,6 +6,7 @@ import {
   addQuestion,
   approveInstructor,
   assignStudentInstructor,
+  createRecruitmentCampaign,
   deleteNews,
   deleteQuestion,
   getEmptyAdminData,
@@ -210,6 +211,8 @@ export function AdminPortal() {
       runAction(() => deleteQuestion(questionId)),
     issueCertificate: (studentId) =>
       runAction(() => issueCertificate(studentId)),
+    createRecruitmentCampaign: (campaign) =>
+      runAction(() => createRecruitmentCampaign(campaign)),
     publishNews: (newsItem) => runAction(() => publishNews(newsItem)),
     deleteNews: (newsItem) => runAction(() => deleteNews(newsItem)),
   };

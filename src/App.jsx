@@ -48,12 +48,18 @@ const loginOptions = [
 ];
 
 const whatsappNumber = "2348100171970";
-const studentRegistration = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-  "Hello DBS Kaduna, I would like to register as a student.",
-)}`;
-const instructorRegistration = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-  "Hello DBS Kaduna, I would like to register as a volunteer instructor.",
-)}`;
+const studentRegistration = "/register/student";
+const instructorRegistration = "/register/volunteer-instructor";
+
+function formatNewsDate(value) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-NG", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
 
 function LoginMenu({ isOpen, menuId, onToggle, variant = "action" }) {
   const menuRef = useRef(null);
@@ -222,6 +228,7 @@ export function App() {
   const [isCarouselPaused, setIsCarouselPaused] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [hasRecentNews, setHasRecentNews] = useState(false);
+  const [latestNews, setLatestNews] = useState(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -231,6 +238,7 @@ export function App() {
       .then(([latestNews]) => {
         if (!latestNews?.publishedAt) return;
 
+        setLatestNews(latestNews);
         setHasRecentNews(isWithinNewsAlertWindow(latestNews.publishedAt));
         const remainingTime = millisecondsUntilNewsAlertExpires(
           latestNews.publishedAt,
@@ -345,6 +353,18 @@ export function App() {
 
       <section className="welcome-panel" id="home" aria-labelledby="welcome-heading">
         <div id="welcome">
+          {latestNews && (
+            <div className="news-ticker" aria-label="Latest DBS Kaduna news">
+              <a className="news-ticker__content" href="/news" target="_blank" rel="noreferrer">
+                <Newspaper aria-hidden="true" size={17} weight="fill" />
+                <strong>{latestNews.title}</strong>
+                <span aria-hidden="true">•</span>
+                <time dateTime={latestNews.publishedAt}>
+                  {formatNewsDate(latestNews.publishedAt)}
+                </time>
+              </a>
+            </div>
+          )}
           <h1 id="welcome-heading">
             Discover Bible School, Kaduna.
           </h1>
@@ -357,8 +377,6 @@ export function App() {
           <a
             className="action-button action-button--student"
             href={studentRegistration}
-            target="_blank"
-            rel="noreferrer"
           >
             <GraduationCap aria-hidden="true" size={25} weight="fill" />
             <span>Register as Student</span>
@@ -367,8 +385,6 @@ export function App() {
           <a
             className="action-button action-button--instructor"
             href={instructorRegistration}
-            target="_blank"
-            rel="noreferrer"
           >
             <UsersThree aria-hidden="true" size={25} weight="fill" />
             <span>Register as Volunteer Instructor</span>
