@@ -1,0 +1,13 @@
+.git/
+.npm-cache/
+.tools/
+.vercel/
+.vercel-global/
+.vite/
+dist/
+node_modules/
+.env*
+.tmp-*
+*.log
+qa-*.png
+supabase/
