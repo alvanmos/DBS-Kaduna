@@ -8,6 +8,7 @@ const emptyData = {
   certificates: [],
   recruitmentCampaigns: [],
   recruitmentEnrolments: [],
+  registrationForms: [],
   news: [],
 };
 
@@ -56,12 +57,15 @@ function isMissingRecruitmentSchema(error) {
     error?.code === "42P01" ||
     error?.code === "PGRST205" ||
     error?.message?.includes("recruitment_campaigns") ||
-    error?.message?.includes("recruitment_enrolments")
+    error?.message?.includes("recruitment_enrolments") ||
+    error?.message?.includes("registration_forms") ||
+    error?.message?.includes("volunteer_registrations")
   );
 }
 
 async function loadRecruitmentData() {
-  const [campaignResult, enrolmentResult] = await Promise.all([
+  const [campaignResult, enrolmentResult, formResult, volunteerResult] =
+    await Promise.all([
     supabase
       .from("recruitment_campaigns")
       .select("*")
@@ -70,11 +74,35 @@ async function loadRecruitmentData() {
       .from("recruitment_enrolments")
       .select("*")
       .order("submitted_at", { ascending: false }),
+    supabase.from("registration_forms").select("*").order("recruitment_kind"),
+    supabase
+      .from("volunteer_registrations")
+      .select("*")
+      .order("created_at", { ascending: false }),
   ]);
 
-  const schemaError = campaignResult.error || enrolmentResult.error;
-  if (schemaError && isMissingRecruitmentSchema(schemaError)) return [[], []];
-  return [throwIfError(campaignResult), throwIfError(enrolmentResult)];
+  const schemaError =
+    campaignResult.error ||
+    enrolmentResult.error ||
+    formResult.error ||
+    volunteerResult.error;
+  if (schemaError && isMissingRecruitmentSchema(schemaError)) {
+    return [[], [], [], []];
+  }
+  return [
+    throwIfError(campaignResult),
+    throwIfError(enrolmentResult),
+    throwIfError(formResult),
+    throwIfError(volunteerResult),
+  ];
+}
+
+function accountActivityStatus(profile, storedStatus) {
+  if (storedStatus === "inactive") return "Inactive";
+  const lastActivity = new Date(profile?.last_activity_at ?? 0).getTime();
+  return Date.now() - lastActivity >= 30 * 24 * 60 * 60 * 1000
+    ? "Inactive"
+    : "Active";
 }
 
 export async function loadAdminData() {
@@ -116,8 +144,12 @@ export async function loadAdminData() {
       ascending: false,
     }),
   ]).then((results) => results.map(throwIfError));
-  const [recruitmentCampaigns, recruitmentEnrolments] =
-    await recruitmentDataPromise;
+  const [
+    recruitmentCampaigns,
+    recruitmentEnrolments,
+    registrationForms,
+    volunteerRegistrations,
+  ] = await recruitmentDataPromise;
 
   const profilesById = new Map(profiles.map((profile) => [profile.id, profile]));
   const instructorNames = new Map();
@@ -132,7 +164,10 @@ export async function loadAdminData() {
       name,
       email: profile?.email ?? "",
       whatsapp: instructor.whatsapp,
-      status: capitalize(instructor.status),
+      address: instructor.address || "",
+      formData: instructor.registration_data ?? {},
+      status: accountActivityStatus(profile, instructor.status),
+      lastActivity: dateOnly(profile?.last_activity_at),
       approval: "Approved",
       maxLoad: instructor.max_student_load,
       unmarked: submissions.filter(
@@ -167,6 +202,26 @@ export async function loadAdminData() {
       };
     });
 
+  const pendingVolunteerRegistrations = volunteerRegistrations
+    .filter((registration) => registration.status === "pending")
+    .map((registration) => ({
+      id: `registration-${registration.id}`,
+      registrationId: registration.id,
+      applicationId: null,
+      profileId: null,
+      name: registration.full_name,
+      email: registration.email,
+      whatsapp: registration.phone || "Not provided",
+      address: registration.address || "Not provided",
+      formData: registration.form_data ?? {},
+      status: "Pending",
+      approval: "Awaiting Approval",
+      maxLoad: 10,
+      unmarked: 0,
+      graduationRequests: 0,
+      lastActivity: "",
+    }));
+
   const mappedStudents = students.map((student) => {
     const studentProgress = progress.filter(
       (item) => item.student_id === student.id,
@@ -183,7 +238,17 @@ export async function loadAdminData() {
       serial: student.serial_number,
       name: student.full_name,
       denomination: student.denomination || "Not provided",
-      status: capitalize(student.status),
+      email: student.email ?? "",
+      phone: student.whatsapp ?? "",
+      address: student.address || student.location_name || "Not provided",
+      registrationData: student.registration_data ?? {},
+      status: accountActivityStatus(
+        profilesById.get(student.profile_id),
+        student.status,
+      ),
+      lastActivity: dateOnly(
+        profilesById.get(student.profile_id)?.last_activity_at,
+      ),
       milestone: milestoneLabels[student.milestone] ?? "Studying",
       instructorId: student.instructor_id,
       progress: Math.round((completedLessons / 26) * 100),
@@ -231,8 +296,10 @@ export async function loadAdminData() {
     campaignId: item.campaign_id,
     recruitmentKind: item.recruitment_kind,
     name: item.full_name,
+    email: item.email ?? "",
     phone: item.phone,
     address: item.address,
+    formData: item.form_data ?? {},
     submittedAt: dateOnly(item.submitted_at),
   }));
 
@@ -259,14 +326,29 @@ export async function loadAdminData() {
     publishedAt: dateOnly(item.published_at ?? item.created_at),
   }));
 
+  const mappedRegistrationForms = registrationForms.map((form) => ({
+    id: form.id,
+    recruitmentKind: form.recruitment_kind,
+    title: form.title,
+    description: form.description,
+    fields: form.fields ?? [],
+    isPublished: form.is_published,
+    updatedAt: dateOnly(form.updated_at),
+  }));
+
   return {
     students: mappedStudents,
-    instructors: [...mappedInstructors, ...pendingApplications],
+    instructors: [
+      ...mappedInstructors,
+      ...pendingApplications,
+      ...pendingVolunteerRegistrations,
+    ],
     lessons: mappedLessons,
     questions: mappedQuestions,
     certificates: mappedCertificates,
     recruitmentCampaigns: mappedRecruitmentCampaigns,
     recruitmentEnrolments: mappedRecruitmentEnrolments,
+    registrationForms: mappedRegistrationForms,
     news: mappedNews,
   };
 }
@@ -284,10 +366,28 @@ export async function assignStudentInstructor(studentId, instructorId) {
   );
 }
 
-export async function approveInstructor(applicationId, maxLoad) {
+export async function approveInstructor(instructor, maxLoad) {
+  if (instructor.registrationId) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const response = await fetch("/api/approve-instructor", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionData.session?.access_token ?? ""}`,
+      },
+      body: JSON.stringify({
+        registrationId: instructor.registrationId,
+        maxLoad,
+      }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || "Approval failed.");
+    return payload;
+  }
+
   throwIfError(
     await supabase.rpc("admin_approve_instructor_application", {
-      application_id: applicationId,
+      application_id: instructor.applicationId,
       student_limit: maxLoad,
     }),
   );
@@ -326,6 +426,7 @@ export async function uploadLessonPdf(lessonNumber, file) {
         storage_path: storagePath,
         original_file_name: file.name,
         uploaded_at: new Date().toISOString(),
+        is_published: true,
       })
       .eq("number", lessonNumber),
   );
@@ -345,6 +446,7 @@ export async function addQuestion({
       prompt,
       marker_instructor_id: markerId || null,
       sort_order: order,
+      is_published: true,
     }),
   );
 }
@@ -395,6 +497,33 @@ export async function createRecruitmentCampaign({ name, recruitmentKind }) {
     .select("*")
     .single();
   return throwIfError(result);
+}
+
+export async function deleteRecruitmentCampaign(campaignId) {
+  throwIfError(
+    await supabase.from("recruitment_campaigns").delete().eq("id", campaignId),
+  );
+}
+
+export async function saveRegistrationForm(form) {
+  const requiredSystemKeys = new Set(["full_name", "email"]);
+  const fields = form.fields.map((field) => ({
+    ...field,
+    required: requiredSystemKeys.has(field.key) ? true : Boolean(field.required),
+  }));
+  return throwIfError(
+    await supabase
+      .from("registration_forms")
+      .update({
+        title: form.title.trim(),
+        description: form.description.trim(),
+        fields,
+        is_published: form.isPublished,
+      })
+      .eq("id", form.id)
+      .select("*")
+      .single(),
+  );
 }
 
 export async function publishNews({ title, body, mediaType, mediaFile }) {

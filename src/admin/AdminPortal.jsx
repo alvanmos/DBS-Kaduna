@@ -7,6 +7,7 @@ import {
   approveInstructor,
   assignStudentInstructor,
   createRecruitmentCampaign,
+  deleteRecruitmentCampaign,
   deleteNews,
   deleteQuestion,
   getEmptyAdminData,
@@ -14,6 +15,7 @@ import {
   loadAdminData,
   moveQuestion,
   publishNews,
+  saveRegistrationForm,
   updateInstructor,
   uploadLessonPdf,
 } from "./adminRepository.js";
@@ -198,8 +200,8 @@ export function AdminPortal() {
   const actions = {
     assignStudent: (studentId, instructorId) =>
       runAction(() => assignStudentInstructor(studentId, instructorId)),
-    approveInstructor: (applicationId, maxLoad) =>
-      runAction(() => approveInstructor(applicationId, maxLoad)),
+    approveInstructor: (instructor, maxLoad) =>
+      runAction(() => approveInstructor(instructor, maxLoad)),
     updateInstructor: (instructorId, changes) =>
       runAction(() => updateInstructor(instructorId, changes)),
     uploadLesson: (lessonNumber, file) =>
@@ -213,6 +215,10 @@ export function AdminPortal() {
       runAction(() => issueCertificate(studentId)),
     createRecruitmentCampaign: (campaign) =>
       runAction(() => createRecruitmentCampaign(campaign)),
+    deleteRecruitmentCampaign: (campaignId) =>
+      runAction(() => deleteRecruitmentCampaign(campaignId)),
+    saveRegistrationForm: (form) =>
+      runAction(() => saveRegistrationForm(form)),
     publishNews: (newsItem) => runAction(() => publishNews(newsItem)),
     deleteNews: (newsItem) => runAction(() => deleteNews(newsItem)),
   };

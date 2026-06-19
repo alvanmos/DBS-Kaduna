@@ -10,9 +10,11 @@ import {
   Check,
   CheckCircle,
   Clock,
+  ClipboardText,
   Copy,
   DownloadSimple,
   FilePdf,
+  FloppyDisk,
   Gauge,
   GraduationCap,
   List,
@@ -24,6 +26,7 @@ import {
   QrCode,
   SignOut,
   Student,
+  Trash,
   UploadSimple,
   UserCheck,
   UserCircle,
@@ -43,6 +46,7 @@ const sectionIcons = {
   reports: ChartBar,
   news: Newspaper,
   recruitment: QrCode,
+  forms: ClipboardText,
 };
 
 function countWhere(items, predicate) {
@@ -443,6 +447,18 @@ function StudentManagement({
             <div className="admin-student-profile">
               <dl>
                 <div>
+                  <dt>Email</dt>
+                  <dd>{selectedStudent.email || "Not provided"}</dd>
+                </div>
+                <div>
+                  <dt>Phone</dt>
+                  <dd>{selectedStudent.phone || "Not provided"}</dd>
+                </div>
+                <div>
+                  <dt>Address</dt>
+                  <dd>{selectedStudent.address}</dd>
+                </div>
+                <div>
                   <dt>Denomination</dt>
                   <dd>{selectedStudent.denomination}</dd>
                 </div>
@@ -458,6 +474,18 @@ function StudentManagement({
                   <dt>Joined</dt>
                   <dd>{selectedStudent.joined}</dd>
                 </div>
+                <div>
+                  <dt>Last dashboard activity</dt>
+                  <dd>{selectedStudent.lastActivity || "No activity recorded"}</dd>
+                </div>
+                {Object.entries(selectedStudent.registrationData ?? {})
+                  .filter(([key]) => !["full_name", "email", "phone", "address", "denomination", "is_adventist"].includes(key))
+                  .map(([key, value]) => (
+                    <div key={key}>
+                      <dt>{key.replaceAll("_", " ")}</dt>
+                      <dd>{typeof value === "boolean" ? (value ? "Yes" : "No") : String(value || "Not provided")}</dd>
+                    </div>
+                  ))}
               </dl>
               <div className="admin-progress admin-progress--large">
                 <span style={{ width: `${selectedStudent.progress}%` }} />
@@ -553,7 +581,7 @@ function InstructorManagement({
   async function approveApplication(instructor) {
     try {
       await onApproveInstructor(
-        instructor.applicationId,
+        instructor,
         Number(capacityById[instructor.id] ?? 10),
       );
       onNotify(`${instructor.name} approved as an instructor.`);
@@ -585,6 +613,8 @@ function InstructorManagement({
                       <h3>{instructor.name}</h3>
                       <p>{instructor.email}</p>
                       <p>{instructor.whatsapp}</p>
+                      {instructor.address && <p>{instructor.address}</p>}
+                      {instructor.lastActivity && <p>Last active: {instructor.lastActivity}</p>}
                     </div>
                     <StatusBadge
                       tone={
@@ -951,7 +981,8 @@ function CertificateManagement({
   const eligibleStudents = students.filter(
     (student) =>
       student.milestone === "Graduated" ||
-      student.milestone === "Awaiting Graduation",
+      student.milestone === "Awaiting Graduation" ||
+      student.progress === 100,
   );
   const [studentId, setStudentId] = useState(eligibleStudents[0]?.id ?? "");
   const [verificationCode, setVerificationCode] = useState("");
@@ -1241,6 +1272,7 @@ function RecruitmentManagement({
   campaigns,
   enrolments,
   onCreateCampaign,
+  onDeleteCampaign,
   onNotify,
 }) {
   const [campaignName, setCampaignName] = useState("");
@@ -1336,6 +1368,18 @@ function RecruitmentManagement({
     anchor.download = `${selectedCampaign.slug}-qr-code.png`;
     anchor.click();
     onNotify("QR code downloaded.");
+  }
+
+  async function deleteCampaign() {
+    if (!selectedCampaign) return;
+    if (!window.confirm(`Delete the campaign “${selectedCampaign.name}”?`)) return;
+    try {
+      await onDeleteCampaign(selectedCampaign.id);
+      setSelectedCampaignId("");
+      onNotify("QR campaign deleted.");
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    }
   }
 
   return (
@@ -1463,6 +1507,14 @@ function RecruitmentManagement({
                   <DownloadSimple aria-hidden="true" size={18} />
                   Download QR
                 </button>
+                <button
+                  className="admin-danger-button"
+                  type="button"
+                  onClick={deleteCampaign}
+                >
+                  <Trash aria-hidden="true" size={18} />
+                  Delete campaign
+                </button>
               </div>
             </>
           ) : (
@@ -1532,6 +1584,224 @@ function RecruitmentManagement({
           </div>
         )}
       </section>
+    </>
+  );
+}
+
+function RegistrationFormManagement({ forms, onSaveForm, onNotify }) {
+  const [selectedKind, setSelectedKind] = useState("student");
+  const selectedForm = forms.find((form) => form.recruitmentKind === selectedKind);
+  const [draft, setDraft] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setDraft(selectedForm ? structuredClone(selectedForm) : null);
+  }, [selectedForm]);
+
+  function updateDraft(changes) {
+    setDraft((current) => ({ ...current, ...changes }));
+  }
+
+  function updateField(index, changes) {
+    setDraft((current) => ({
+      ...current,
+      fields: current.fields.map((field, fieldIndex) =>
+        fieldIndex === index ? { ...field, ...changes } : field,
+      ),
+    }));
+  }
+
+  function addField() {
+    setDraft((current) => ({
+      ...current,
+      fields: [
+        ...current.fields,
+        {
+          key: `custom_${crypto.randomUUID().slice(0, 8)}`,
+          label: "New field",
+          type: "text",
+          required: false,
+          options: [],
+        },
+      ],
+    }));
+  }
+
+  function removeField(index) {
+    setDraft((current) => ({
+      ...current,
+      fields: current.fields.filter((_, fieldIndex) => fieldIndex !== index),
+    }));
+  }
+
+  async function saveForm(event) {
+    event.preventDefault();
+    setIsSaving(true);
+    try {
+      await onSaveForm(draft);
+      onNotify(`${draft.title} saved and ${draft.isPublished ? "published" : "unpublished"}.`);
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  return (
+    <>
+      <PageHeading
+        eyebrow="Registration forms"
+        title="Publish and modify registration forms"
+        description="Control the fields shown on student and volunteer instructor forms, including which responses are compulsory."
+      />
+
+      <div className="admin-form-tabs" role="tablist" aria-label="Registration form type">
+        <button
+          className={selectedKind === "student" ? "is-active" : ""}
+          type="button"
+          onClick={() => setSelectedKind("student")}
+        >
+          <GraduationCap aria-hidden="true" size={20} />
+          Student form
+        </button>
+        <button
+          className={selectedKind === "volunteer_instructor" ? "is-active" : ""}
+          type="button"
+          onClick={() => setSelectedKind("volunteer_instructor")}
+        >
+          <UsersThree aria-hidden="true" size={20} />
+          Volunteer instructor form
+        </button>
+      </div>
+
+      {!draft ? (
+        <section className="admin-panel">
+          <EmptyState>Apply the latest database migration to manage registration forms.</EmptyState>
+        </section>
+      ) : (
+        <form className="admin-form-builder" onSubmit={saveForm}>
+          <section className="admin-panel">
+            <div className="admin-panel-heading">
+              <div>
+                <h3>Form details</h3>
+                <p>The title and introduction appear on the public registration page.</p>
+              </div>
+              <label className="admin-publish-toggle">
+                <input
+                  type="checkbox"
+                  checked={draft.isPublished}
+                  onChange={(event) => updateDraft({ isPublished: event.target.checked })}
+                />
+                Published
+              </label>
+            </div>
+            <div className="admin-form-grid">
+              <label className="admin-form-grid__wide">
+                Form title
+                <input
+                  value={draft.title}
+                  onChange={(event) => updateDraft({ title: event.target.value })}
+                  required
+                />
+              </label>
+              <label className="admin-form-grid__wide">
+                Introduction
+                <textarea
+                  rows="3"
+                  value={draft.description}
+                  onChange={(event) => updateDraft({ description: event.target.value })}
+                />
+              </label>
+            </div>
+          </section>
+
+          <section className="admin-panel">
+            <div className="admin-panel-heading">
+              <div>
+                <h3>Form fields</h3>
+                <p>Full name and email stay compulsory because they create secure accounts.</p>
+              </div>
+              <button className="admin-secondary-button" type="button" onClick={addField}>
+                <Plus aria-hidden="true" size={18} />
+                Add field
+              </button>
+            </div>
+            <div className="admin-field-builder-list">
+              {draft.fields.map((field, index) => {
+                const protectedField = ["full_name", "email"].includes(field.key);
+                return (
+                  <article key={field.key}>
+                    <label>
+                      Field label
+                      <input
+                        value={field.label}
+                        onChange={(event) => updateField(index, { label: event.target.value })}
+                        required
+                      />
+                    </label>
+                    <label>
+                      Field type
+                      <select
+                        value={field.type}
+                        onChange={(event) => updateField(index, { type: event.target.value })}
+                        disabled={protectedField}
+                      >
+                        <option value="text">Short text</option>
+                        <option value="email">Email</option>
+                        <option value="tel">Phone</option>
+                        <option value="textarea">Long text</option>
+                        <option value="number">Number</option>
+                        <option value="date">Date</option>
+                        <option value="checkbox">Checkbox</option>
+                        <option value="select">Dropdown</option>
+                      </select>
+                    </label>
+                    {field.type === "select" && (
+                      <label>
+                        Options (comma-separated)
+                        <input
+                          value={(field.options ?? []).join(", ")}
+                          onChange={(event) =>
+                            updateField(index, {
+                              options: event.target.value
+                                .split(",")
+                                .map((item) => item.trim())
+                                .filter(Boolean),
+                            })
+                          }
+                        />
+                      </label>
+                    )}
+                    <label className="admin-field-required">
+                      <input
+                        type="checkbox"
+                        checked={field.required}
+                        disabled={protectedField}
+                        onChange={(event) => updateField(index, { required: event.target.checked })}
+                      />
+                      Compulsory
+                    </label>
+                    <button
+                      className="admin-icon-danger"
+                      type="button"
+                      disabled={protectedField}
+                      onClick={() => removeField(index)}
+                      aria-label={`Remove ${field.label}`}
+                    >
+                      <Trash aria-hidden="true" size={18} />
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+
+          <button className="admin-primary-button admin-form-save" type="submit" disabled={isSaving}>
+            <FloppyDisk aria-hidden="true" size={19} />
+            {isSaving ? "Saving..." : "Save registration form"}
+          </button>
+        </form>
+      )}
     </>
   );
 }
@@ -1703,6 +1973,7 @@ export function AdminDashboard({
       questions: data.questions.length,
       certificates: data.certificates.length,
       recruitment: data.recruitmentEnrolments.length,
+      forms: data.registrationForms.length,
       news: data.news.length,
     }),
     [data],
@@ -1788,6 +2059,15 @@ export function AdminDashboard({
         campaigns={data.recruitmentCampaigns}
         enrolments={data.recruitmentEnrolments}
         onCreateCampaign={actions.createRecruitmentCampaign}
+        onDeleteCampaign={actions.deleteRecruitmentCampaign}
+        onNotify={notify}
+      />
+    );
+  } else if (activeSection === "forms") {
+    content = (
+      <RegistrationFormManagement
+        forms={data.registrationForms}
+        onSaveForm={actions.saveRegistrationForm}
         onNotify={notify}
       />
     );

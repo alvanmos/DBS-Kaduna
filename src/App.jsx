@@ -51,16 +51,6 @@ const whatsappNumber = "2348100171970";
 const studentRegistration = "/register/student";
 const instructorRegistration = "/register/volunteer-instructor";
 
-function formatNewsDate(value) {
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return "";
-  return new Intl.DateTimeFormat("en-NG", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-}
-
 function LoginMenu({ isOpen, menuId, onToggle, variant = "action" }) {
   const menuRef = useRef(null);
 
@@ -358,18 +348,14 @@ export function App() {
               <a className="news-ticker__content" href="/news" target="_blank" rel="noreferrer">
                 <Newspaper aria-hidden="true" size={17} weight="fill" />
                 <strong>{latestNews.title}</strong>
-                <span aria-hidden="true">•</span>
-                <time dateTime={latestNews.publishedAt}>
-                  {formatNewsDate(latestNews.publishedAt)}
-                </time>
               </a>
             </div>
           )}
           <h1 id="welcome-heading">
-            Discover Bible School, Kaduna.
+            Discover Bible School, Kaduna
           </h1>
           <p className="hero-summary">
-            Free Bible School Correspondence Course for Your Spiritual Growth.
+            Free Bible School Correspondence Course for Your Spiritual Growth
           </p>
         </div>
 

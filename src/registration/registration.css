@@ -162,6 +162,19 @@
   font-weight: 750;
 }
 
+.registration-label-text {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.registration-label-text small {
+  color: #7b8798;
+  font-size: 0.62rem;
+  font-weight: 650;
+}
+
 .registration-form label > span {
   min-height: 50px;
   margin-top: 7px;
@@ -182,7 +195,8 @@
 }
 
 .registration-form input,
-.registration-form textarea {
+.registration-form textarea,
+.registration-form select {
   width: 100%;
   padding: 12px 0;
   color: #102346;
@@ -190,6 +204,11 @@
   border: 0;
   font: inherit;
   font-weight: 450;
+  outline: 0;
+}
+
+.registration-form select {
+  border: 0;
   outline: 0;
 }
 
@@ -232,6 +251,44 @@
 .registration-form button:disabled {
   opacity: 0.58;
   cursor: wait;
+}
+
+.registration-checkbox {
+  min-height: 50px;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid #ccd6e1;
+  border-radius: 10px;
+}
+
+.registration-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: #08783d;
+}
+
+.registration-checkbox small {
+  color: #7b8798;
+  font-size: 0.62rem;
+}
+
+.registration-honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.registration-loading {
+  min-height: 360px;
+  display: grid;
+  place-items: center;
+  color: #66748a;
 }
 
 .registration-privacy {
