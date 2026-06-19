@@ -4,6 +4,7 @@ import {
   CheckCircle,
   EnvelopeSimple,
   GraduationCap,
+  LockKey,
   MapPin,
   Phone,
   User,
@@ -39,6 +40,8 @@ const roleContent = {
 const fieldIcons = {
   full_name: User,
   email: EnvelopeSimple,
+  username: User,
+  password: LockKey,
   phone: Phone,
   address: MapPin,
 };
@@ -98,18 +101,28 @@ function DynamicField({ field, value, onChange }) {
         ) : (
           <input
             {...commonProps}
-            type={["email", "tel", "number", "date"].includes(field.type) ? field.type : "text"}
+            type={
+              ["email", "tel", "number", "date", "password"].includes(field.type)
+                ? field.type
+                : "text"
+            }
             autoComplete={
               field.key === "full_name"
                 ? "name"
                 : field.key === "email"
                   ? "email"
-                  : field.key === "phone"
-                    ? "tel"
-                    : field.key === "address"
-                      ? "street-address"
-                      : "off"
+                  : field.key === "username"
+                    ? "username"
+                    : field.key === "password"
+                      ? "new-password"
+                      : field.key === "phone"
+                        ? "tel"
+                        : field.key === "address"
+                          ? "street-address"
+                          : "off"
             }
+            minLength={field.key === "password" ? 8 : undefined}
+            spellCheck={field.key === "username" ? false : undefined}
             placeholder={`Enter ${field.label.toLowerCase()}`}
           />
         )}
@@ -164,6 +177,9 @@ export function RegistrationPage({ role }) {
   }, [title]);
 
   const fields = useMemo(() => registrationForm?.fields ?? [], [registrationForm]);
+  const successHref = content.kind === "student" ? "/login/student" : "/";
+  const successLabel =
+    content.kind === "student" ? "Proceed to student login" : "Return to homepage";
 
   function updateField(field, value) {
     setFormData((current) => ({ ...current, [field]: value }));
@@ -219,7 +235,7 @@ export function RegistrationPage({ role }) {
               <CheckCircle aria-hidden="true" size={58} weight="duotone" />
               <h2>Registration received</h2>
               <p>{message}</p>
-              <a href="/">Return to homepage</a>
+              <a href={successHref}>{successLabel}</a>
             </div>
           ) : pageStatus === "loading" ? (
             <div className="registration-loading">Loading registration form...</div>

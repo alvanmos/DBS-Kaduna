@@ -10,6 +10,44 @@ export async function touchActivity() {
   await supabase.rpc("touch_my_activity");
 }
 
+function fallbackFileName(storagePath, defaultName = "download.pdf") {
+  return storagePath?.split("/").pop() || defaultName;
+}
+
+async function createSignedStorageUrl(bucket, storagePath) {
+  if (!storagePath) throw new Error("This PDF is not available yet.");
+  const result = await supabase.storage
+    .from(bucket)
+    .createSignedUrl(storagePath, 15 * 60);
+  const data = throwIfError(result);
+  return data.signedUrl;
+}
+
+async function downloadBucketFile(bucket, storagePath, fileName) {
+  if (!storagePath) throw new Error("This PDF is not available yet.");
+  const result = await supabase.storage.from(bucket).download(storagePath);
+  const blob = throwIfError(result);
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName || fallbackFileName(storagePath);
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function resolveLoginIdentifier(role, identifier) {
+  const response = await fetch("/api/login-identity", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ role, identifier }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.error || "Login details could not be verified.");
+  }
+  return payload.email;
+}
+
 export async function loadStudentDashboard() {
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
@@ -149,12 +187,24 @@ export async function loadInstructorDashboard() {
 }
 
 export async function openLessonPdf(storagePath) {
-  if (!storagePath) throw new Error("This lesson PDF has not been uploaded.");
-  const result = await supabase.storage
-    .from("lesson-pdfs")
-    .createSignedUrl(storagePath, 15 * 60);
-  const data = throwIfError(result);
-  window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  const signedUrl = await createSignedStorageUrl("lesson-pdfs", storagePath);
+  window.open(signedUrl, "_blank", "noopener,noreferrer");
+}
+
+export async function downloadLessonPdf(storagePath, fileName) {
+  await downloadBucketFile(
+    "lesson-pdfs",
+    storagePath,
+    fileName || fallbackFileName(storagePath, "lesson.pdf"),
+  );
+}
+
+export async function downloadCertificatePdf(storagePath, fileName) {
+  await downloadBucketFile(
+    "certificate-pdfs",
+    storagePath,
+    fileName || fallbackFileName(storagePath, "certificate.pdf"),
+  );
 }
 
 export async function submitStudentLesson(lessonNumber, answers) {

@@ -300,7 +300,7 @@ function StudentManagement({
   const [mapMode, setMapMode] = useState("selected");
 
   const filteredStudents = students.filter((student) =>
-    `${student.name} ${student.serial} ${student.denomination}`
+    `${student.name} ${student.serial} ${student.username} ${student.denomination}`
       .toLowerCase()
       .includes(query.toLowerCase()),
   );
@@ -447,6 +447,10 @@ function StudentManagement({
             <div className="admin-student-profile">
               <dl>
                 <div>
+                  <dt>Username</dt>
+                  <dd>{selectedStudent.username || "Not assigned yet"}</dd>
+                </div>
+                <div>
                   <dt>Email</dt>
                   <dd>{selectedStudent.email || "Not provided"}</dd>
                 </div>
@@ -479,7 +483,7 @@ function StudentManagement({
                   <dd>{selectedStudent.lastActivity || "No activity recorded"}</dd>
                 </div>
                 {Object.entries(selectedStudent.registrationData ?? {})
-                  .filter(([key]) => !["full_name", "email", "phone", "address", "denomination", "is_adventist"].includes(key))
+                  .filter(([key]) => !["full_name", "email", "username", "password", "phone", "address", "denomination", "is_adventist"].includes(key))
                   .map(([key, value]) => (
                     <div key={key}>
                       <dt>{key.replaceAll("_", " ")}</dt>
@@ -611,6 +615,7 @@ function InstructorManagement({
                   <div className="admin-instructor-title">
                     <div>
                       <h3>{instructor.name}</h3>
+                      {instructor.username && <p>Username: {instructor.username}</p>}
                       <p>{instructor.email}</p>
                       <p>{instructor.whatsapp}</p>
                       {instructor.address && <p>{instructor.address}</p>}
@@ -976,6 +981,7 @@ function CertificateManagement({
   certificates,
   students,
   onIssueCertificate,
+  onUploadCertificatePdf,
   onNotify,
 }) {
   const eligibleStudents = students.filter(
@@ -986,15 +992,44 @@ function CertificateManagement({
   );
   const [studentId, setStudentId] = useState(eligibleStudents[0]?.id ?? "");
   const [verificationCode, setVerificationCode] = useState("");
+  const [certificateFile, setCertificateFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const selectedStudent = students.find((student) => student.id === studentId);
+  const selectedCertificate = certificates.find(
+    (certificate) => certificate.studentId === studentId,
+  );
 
   async function generateCertificate() {
     if (!studentId) return;
     try {
       const certificate = await onIssueCertificate(studentId);
-      setVerificationCode(certificate?.verification_code ?? "");
+      setVerificationCode(
+        certificate?.verification_code ?? certificate?.code ?? "",
+      );
       onNotify("Digital certificate generated.");
     } catch (error) {
       onNotify(readableError(error), "error");
+    }
+  }
+
+  async function uploadCertificatePdf() {
+    if (!studentId || !certificateFile) return;
+    setIsUploading(true);
+    try {
+      const certificate = await onUploadCertificatePdf(studentId, certificateFile);
+      setVerificationCode(
+        certificate?.verification_code ??
+          certificate?.code ??
+          selectedCertificate?.code ??
+          "",
+      );
+      setCertificateFile(null);
+      onNotify("Certificate PDF uploaded.");
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    } finally {
+      setIsUploading(false);
     }
   }
 
@@ -1015,7 +1050,7 @@ function CertificateManagement({
           <div className="admin-panel-heading">
             <div>
               <h3>Generate certificate</h3>
-              <p>Select an eligible student and issue a verification code.</p>
+              <p>Select an eligible student, issue a verification code, and upload the graduation PDF.</p>
             </div>
           </div>
           <div className="admin-certificate-generator">
@@ -1037,6 +1072,30 @@ function CertificateManagement({
               <Certificate aria-hidden="true" size={20} />
               Generate digital certificate
             </button>
+            <label className="admin-file-field">
+              Graduation certificate PDF
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={(event) =>
+                  setCertificateFile(event.target.files?.[0] ?? null)
+                }
+              />
+            </label>
+            <button
+              className="admin-secondary-button"
+              type="button"
+              onClick={uploadCertificatePdf}
+              disabled={!certificateFile || isUploading}
+            >
+              <UploadSimple aria-hidden="true" size={19} />
+              {isUploading ? "Uploading..." : "Upload certificate PDF"}
+            </button>
+            <small className="admin-maintenance-note">
+              {selectedCertificate?.fileName
+                ? `Current PDF: ${selectedCertificate.fileName}`
+                : "No certificate PDF has been uploaded for this student yet."}
+            </small>
           </div>
           {verificationCode && (
             <div className="admin-certificate-preview">
@@ -1044,9 +1103,7 @@ function CertificateManagement({
               <p>Discover Bible School, Kaduna</p>
               <h3>Certificate of Completion</h3>
               <span>This certifies that</span>
-              <strong>
-                {students.find((student) => student.id === studentId)?.name}
-              </strong>
+              <strong>{selectedStudent?.name}</strong>
               <small>Verification: {verificationCode}</small>
             </div>
           )}
@@ -1100,6 +1157,7 @@ function CertificateManagement({
                   <th>Certificate</th>
                   <th>Student</th>
                   <th>Issued</th>
+                  <th>PDF</th>
                 </tr>
               </thead>
               <tbody>
@@ -1114,6 +1172,7 @@ function CertificateManagement({
                       }
                     </td>
                     <td>{certificate.issuedAt}</td>
+                    <td>{certificate.fileName || "Awaiting upload"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1588,11 +1647,17 @@ function RecruitmentManagement({
   );
 }
 
-function RegistrationFormManagement({ forms, onSaveForm, onNotify }) {
+function RegistrationFormManagement({
+  forms,
+  onSaveForm,
+  onClearRegistrationData,
+  onNotify,
+}) {
   const [selectedKind, setSelectedKind] = useState("student");
   const selectedForm = forms.find((form) => form.recruitmentKind === selectedKind);
   const [draft, setDraft] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   useEffect(() => {
     setDraft(selectedForm ? structuredClone(selectedForm) : null);
@@ -1644,6 +1709,28 @@ function RegistrationFormManagement({ forms, onSaveForm, onNotify }) {
       onNotify(readableError(error), "error");
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function clearStoredRegistrationData() {
+    if (
+      !window.confirm(
+        "Clear saved student and instructor registration data from the system? Active accounts and lesson progress will be kept.",
+      )
+    ) {
+      return;
+    }
+
+    setIsClearing(true);
+    try {
+      const result = await onClearRegistrationData();
+      onNotify(
+        `Registration data cleared for ${result?.students_cleared ?? 0} students and ${result?.instructors_cleared ?? 0} instructors.`,
+      );
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    } finally {
+      setIsClearing(false);
     }
   }
 
@@ -1719,7 +1806,7 @@ function RegistrationFormManagement({ forms, onSaveForm, onNotify }) {
             <div className="admin-panel-heading">
               <div>
                 <h3>Form fields</h3>
-                <p>Full name and email stay compulsory because they create secure accounts.</p>
+                <p>Full name, email, username, and password stay compulsory because they create secure accounts.</p>
               </div>
               <button className="admin-secondary-button" type="button" onClick={addField}>
                 <Plus aria-hidden="true" size={18} />
@@ -1728,7 +1815,7 @@ function RegistrationFormManagement({ forms, onSaveForm, onNotify }) {
             </div>
             <div className="admin-field-builder-list">
               {draft.fields.map((field, index) => {
-                const protectedField = ["full_name", "email"].includes(field.key);
+                const protectedField = ["full_name", "email", "username", "password"].includes(field.key);
                 return (
                   <article key={field.key}>
                     <label>
@@ -1748,6 +1835,7 @@ function RegistrationFormManagement({ forms, onSaveForm, onNotify }) {
                       >
                         <option value="text">Short text</option>
                         <option value="email">Email</option>
+                        <option value="password">Password</option>
                         <option value="tel">Phone</option>
                         <option value="textarea">Long text</option>
                         <option value="number">Number</option>
@@ -1794,6 +1882,24 @@ function RegistrationFormManagement({ forms, onSaveForm, onNotify }) {
                 );
               })}
             </div>
+          </section>
+
+          <section className="admin-panel">
+            <div className="admin-panel-heading">
+              <div>
+                <h3>Registration data cleanup</h3>
+                <p>Clear saved student and instructor form payloads together with campaign enrolment history while leaving active accounts and lesson progress intact.</p>
+              </div>
+            </div>
+            <button
+              className="admin-danger-button"
+              type="button"
+              onClick={clearStoredRegistrationData}
+              disabled={isClearing}
+            >
+              <Trash aria-hidden="true" size={18} />
+              {isClearing ? "Clearing..." : "Clear saved registration data"}
+            </button>
           </section>
 
           <button className="admin-primary-button admin-form-save" type="submit" disabled={isSaving}>
@@ -2041,6 +2147,7 @@ export function AdminDashboard({
         certificates={data.certificates}
         students={data.students}
         onIssueCertificate={actions.issueCertificate}
+        onUploadCertificatePdf={actions.uploadCertificatePdf}
         onNotify={notify}
       />
     );
@@ -2068,6 +2175,7 @@ export function AdminDashboard({
       <RegistrationFormManagement
         forms={data.registrationForms}
         onSaveForm={actions.saveRegistrationForm}
+        onClearRegistrationData={actions.clearRegistrationData}
         onNotify={notify}
       />
     );

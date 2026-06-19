@@ -4,12 +4,36 @@ function send(res, status, body) {
   res.status(status).json(body);
 }
 
-function siteUrl() {
-  const configured = process.env.PUBLIC_SITE_URL?.replace(/\/$/, "");
-  if (configured) return configured;
-  const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  if (productionHost) return `https://${productionHost}`;
-  return "http://localhost:5173";
+function normalizeUsername(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/(^[._-]+|[._-]+$)/g, "")
+    .replace(/[-._]{2,}/g, "-");
+}
+
+function sanitizeFormData(formData, username) {
+  return Object.fromEntries(
+    Object.entries(formData)
+      .filter(([key]) => !["password", "website"].includes(key))
+      .map(([key, value]) => [
+        key,
+        typeof value === "string" ? value.trim() : value,
+      ])
+      .map(([key, value]) => [key, key === "username" ? username : value]),
+  );
+}
+
+function validateCredentials(username, password) {
+  if (!/^[a-z0-9._-]{3,24}$/.test(username)) {
+    throw new Error(
+      "Choose a username with 3 to 24 letters, numbers, dots, hyphens, or underscores.",
+    );
+  }
+  if (password.length < 8) {
+    throw new Error("Choose a password with at least 8 characters.");
+  }
 }
 
 function validateForm(fields, formData) {
@@ -86,23 +110,32 @@ export default async function handler(req, res) {
 
     const fullName = String(formData.full_name).trim();
     const email = String(formData.email).trim().toLowerCase();
+    const username = normalizeUsername(formData.username);
+    const password = String(formData.password ?? "");
     const phone = String(formData.phone ?? "").trim() || null;
     const address = String(formData.address ?? "").trim() || null;
+    const sanitizedFormData = sanitizeFormData(formData, username);
+
+    validateCredentials(username, password);
 
     if (recruitmentKind === "student") {
-      const { data: invitation, error: invitationError } =
-        await supabase.auth.admin.inviteUserByEmail(email, {
-          data: { full_name: fullName, role: "student" },
-          redirectTo: `${siteUrl()}/login/student?type=invite`,
+      const { data: createdUser, error: createUserError } =
+        await supabase.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+          user_metadata: { full_name: fullName, role: "student" },
         });
-      if (invitationError) throw invitationError;
-      createdUserId = invitation.user.id;
+      if (createUserError) throw createUserError;
+      createdUserId = createdUser.user?.id;
+      if (!createdUserId) throw new Error("Student account could not be created.");
 
       const { error: profileError } = await supabase.from("profiles").upsert({
         id: createdUserId,
         email,
         full_name: fullName,
         phone,
+        username,
         role: "student",
         status: "active",
         last_activity_at: new Date().toISOString(),
@@ -120,7 +153,7 @@ export default async function handler(req, res) {
           location_name: address,
           denomination: formData.denomination || null,
           is_adventist: Boolean(formData.is_adventist),
-          registration_data: formData,
+          registration_data: sanitizedFormData,
         })
         .select("id")
         .single();
@@ -146,16 +179,42 @@ export default async function handler(req, res) {
           email,
           phone,
           address,
-          form_data: formData,
+          form_data: sanitizedFormData,
           student_id: student.id,
         });
       if (enrolmentError) throw enrolmentError;
 
       return send(res, 201, {
         ok: true,
-        message: "Registration received. Check your email to create your password.",
+        message:
+          "Registration successful. You can now sign in with your username and password.",
       });
     }
+
+    const { data: createdUser, error: createUserError } =
+      await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: fullName, role: "instructor" },
+      });
+    if (createUserError) throw createUserError;
+    createdUserId = createdUser.user?.id;
+    if (!createdUserId) {
+      throw new Error("Volunteer instructor account could not be prepared.");
+    }
+
+    const { error: profileError } = await supabase.from("profiles").upsert({
+      id: createdUserId,
+      email,
+      full_name: fullName,
+      phone,
+      username,
+      role: "instructor",
+      status: "inactive",
+      last_activity_at: new Date().toISOString(),
+    });
+    if (profileError) throw profileError;
 
     const { data: enrolment, error: enrolmentError } = await supabase
       .from("recruitment_enrolments")
@@ -166,7 +225,7 @@ export default async function handler(req, res) {
         email,
         phone,
         address,
-        form_data: formData,
+        form_data: sanitizedFormData,
       })
       .select("id")
       .single();
@@ -177,18 +236,19 @@ export default async function handler(req, res) {
       .insert({
         campaign_id: campaign?.id ?? null,
         enrolment_id: enrolment.id,
+        profile_id: createdUserId,
         full_name: fullName,
         email,
         phone,
         address,
-        form_data: formData,
+        form_data: sanitizedFormData,
       });
     if (volunteerError) throw volunteerError;
 
     return send(res, 201, {
       ok: true,
       message:
-        "Registration received. Login access will be emailed after administrator approval.",
+        "Registration received. Your instructor login will work after administrator approval.",
     });
   } catch (error) {
     if (createdUserId) {

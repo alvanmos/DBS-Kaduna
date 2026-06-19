@@ -743,6 +743,7 @@
 }
 
 .portal-lesson-review-heading > div:last-child,
+.portal-lesson-actions,
 .portal-lesson-result-actions,
 .portal-review-fields > div {
   display: flex;

@@ -55,29 +55,59 @@ export default async function handler(req, res) {
       throw new Error("Pending volunteer registration not found.");
     }
 
-    const { data: invitation, error: invitationError } =
-      await supabase.auth.admin.inviteUserByEmail(registration.email, {
-        data: { full_name: registration.full_name, role: "instructor" },
-        redirectTo: `${siteUrl()}/login/instructor?type=invite`,
-      });
-    if (invitationError) throw invitationError;
-    createdUserId = invitation.user.id;
+    let profileId = registration.profile_id;
+    let approvalMessage =
+      "Instructor approved. The registered username and password are now active.";
 
-    const { error: profileError } = await supabase.from("profiles").upsert({
-      id: createdUserId,
-      email: registration.email,
-      full_name: registration.full_name,
-      phone: registration.phone,
-      role: "instructor",
-      status: "active",
-      last_activity_at: new Date().toISOString(),
-    });
-    if (profileError) throw profileError;
+    if (profileId) {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", profileId)
+        .single();
+      if (profileError || !profile) {
+        throw new Error("The pending instructor profile could not be found.");
+      }
+
+      const { error: activateProfileError } = await supabase
+        .from("profiles")
+        .update({
+          email: registration.email,
+          full_name: registration.full_name,
+          phone: registration.phone,
+          role: "instructor",
+          status: "active",
+        })
+        .eq("id", profileId);
+      if (activateProfileError) throw activateProfileError;
+    } else {
+      const { data: invitation, error: invitationError } =
+        await supabase.auth.admin.inviteUserByEmail(registration.email, {
+          data: { full_name: registration.full_name, role: "instructor" },
+          redirectTo: `${siteUrl()}/login/instructor?type=invite`,
+        });
+      if (invitationError) throw invitationError;
+      createdUserId = invitation.user.id;
+      profileId = createdUserId;
+      approvalMessage =
+        "Instructor approved and password-setup invitation sent by email.";
+
+      const { error: profileError } = await supabase.from("profiles").upsert({
+        id: createdUserId,
+        email: registration.email,
+        full_name: registration.full_name,
+        phone: registration.phone,
+        role: "instructor",
+        status: "active",
+        last_activity_at: new Date().toISOString(),
+      });
+      if (profileError) throw profileError;
+    }
 
     const { data: instructor, error: instructorError } = await supabase
       .from("instructors")
       .insert({
-        profile_id: createdUserId,
+        profile_id: profileId,
         whatsapp: registration.phone || "Not provided",
         address: registration.address,
         registration_data: registration.form_data,
@@ -108,7 +138,7 @@ export default async function handler(req, res) {
     return send(res, 200, {
       ok: true,
       instructorId: instructor.id,
-      message: "Instructor approved and secure login invitation sent.",
+      message: approvalMessage,
     });
   } catch (error) {
     if (createdUserId) await supabase.auth.admin.deleteUser(createdUserId);
