@@ -35,3 +35,14 @@ When implementing from a selected generated mock, treat that image as the source
 - Keep campaign enrollee names, phone numbers, addresses, and export controls visible only in administration.
 - Show the latest published news headline and date as moving text immediately above the homepage title.
 - Blink the homepage News control for seven days after the newest publication, while respecting reduced-motion preferences.
+- Keep QR campaign titles private to administrators and allow administrators to delete campaigns.
+- Let administrators publish and modify student and volunteer-instructor registration forms, including compulsory and optional fields.
+- Student accounts receive secure setup-email links immediately after registration; volunteer instructors receive access only after administrator approval.
+
+## Learning Portal Direction
+
+- Keep student access on `/login/student` and `/student`, and instructor access on `/login/instructor` and `/instructor`.
+- Classify accounts with no dashboard activity for 30 days as inactive in administration without deleting their records.
+- Student dashboards must show the assigned instructor, all 26 lessons and statuses, online answers, marking feedback, progress, and approved certificate downloads.
+- Instructor dashboards must show only assigned students, support lesson locks, marking and comments, correction returns, completion, and graduation requests.
+- Account emails must use secure invitation/password-setup links; never email plaintext passwords.

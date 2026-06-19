@@ -256,6 +256,23 @@
   border-color: var(--admin-blue);
 }
 
+.admin-danger-button {
+  min-height: 42px;
+  padding: 9px 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #a22f3f;
+  background: #fff1f3;
+  border: 1px solid #efc2c9;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
 .admin-auth-submit {
   min-height: 52px;
   margin-top: 2px;
@@ -1503,12 +1520,118 @@
 .admin-qr-actions {
   margin-top: 14px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
 .admin-recruitment-enrolments {
   margin-bottom: 20px;
+}
+
+.admin-form-tabs {
+  margin-bottom: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.admin-form-tabs button {
+  min-height: 44px;
+  padding: 9px 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--admin-muted);
+  background: #ffffff;
+  border: 1px solid var(--admin-line);
+  border-radius: 9px;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.admin-form-tabs button.is-active {
+  color: #ffffff;
+  background: var(--admin-blue);
+  border-color: var(--admin-blue);
+}
+
+.admin-form-builder {
+  display: grid;
+  gap: 20px;
+}
+
+.admin-publish-toggle,
+.admin-field-required {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--admin-ink);
+  font-size: 0.74rem;
+  font-weight: 750;
+}
+
+.admin-publish-toggle input,
+.admin-field-required input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--admin-green);
+}
+
+.admin-field-builder-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-field-builder-list article {
+  padding: 13px;
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) minmax(130px, 0.8fr) minmax(190px, 1fr) auto auto;
+  align-items: end;
+  gap: 11px;
+  background: #f8fafc;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+}
+
+.admin-field-builder-list label {
+  color: var(--admin-ink);
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.admin-field-builder-list input:not([type="checkbox"]),
+.admin-field-builder-list select {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  color: var(--admin-ink);
+  background: #ffffff;
+  border: 1px solid #ccd6e1;
+  border-radius: 8px;
+  font: inherit;
+}
+
+.admin-icon-danger {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  color: #a22f3f;
+  background: #fff1f3;
+  border: 1px solid #efc2c9;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.admin-icon-danger:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.admin-form-save {
+  justify-self: end;
 }
 
 .admin-news-list {
@@ -1746,6 +1869,14 @@
 
   .admin-qr-actions {
     grid-template-columns: 1fr;
+  }
+
+  .admin-field-builder-list article {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-form-tabs {
+    flex-direction: column;
   }
 
   .admin-instructor-card {

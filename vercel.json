@@ -17,6 +17,30 @@
       "destination": "/index.html"
     },
     {
+      "source": "/student/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/student",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/instructor/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/instructor",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/login/student",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/login/instructor",
+      "destination": "/index.html"
+    },
+    {
       "source": "/news",
       "destination": "/index.html"
     },
