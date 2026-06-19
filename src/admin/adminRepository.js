@@ -31,6 +31,37 @@ const questionTypeValues = Object.fromEntries(
   Object.entries(questionTypeLabels).map(([value, label]) => [label, value]),
 );
 
+const protectedFieldDefinitions = {
+  full_name: {
+    key: "full_name",
+    label: "Full name",
+    type: "text",
+    required: true,
+    system: true,
+  },
+  email: {
+    key: "email",
+    label: "Email address",
+    type: "email",
+    required: true,
+    system: true,
+  },
+  username: {
+    key: "username",
+    label: "Username",
+    type: "text",
+    required: true,
+    system: true,
+  },
+  password: {
+    key: "password",
+    label: "Password",
+    type: "password",
+    required: true,
+    system: true,
+  },
+};
+
 function capitalize(value) {
   if (!value) return "";
   return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
@@ -162,6 +193,7 @@ export async function loadAdminData() {
       id: instructor.id,
       profileId: instructor.profile_id,
       name,
+      username: profile?.username ?? "",
       email: profile?.email ?? "",
       whatsapp: instructor.whatsapp,
       address: instructor.address || "",
@@ -210,6 +242,7 @@ export async function loadAdminData() {
       applicationId: null,
       profileId: null,
       name: registration.full_name,
+      username: registration.form_data?.username ?? "",
       email: registration.email,
       whatsapp: registration.phone || "Not provided",
       address: registration.address || "Not provided",
@@ -237,6 +270,7 @@ export async function loadAdminData() {
       id: student.id,
       serial: student.serial_number,
       name: student.full_name,
+      username: profilesById.get(student.profile_id)?.username ?? "",
       denomination: student.denomination || "Not provided",
       email: student.email ?? "",
       phone: student.whatsapp ?? "",
@@ -289,6 +323,8 @@ export async function loadAdminData() {
     code: certificate.verification_code,
     issuedAt: dateOnly(certificate.issued_at),
     status: certificate.revoked_at ? "Revoked" : "Verified",
+    storagePath: certificate.storage_path,
+    fileName: certificate.original_file_name ?? "",
   }));
 
   const mappedRecruitmentEnrolments = recruitmentEnrolments.map((item) => ({
@@ -467,11 +503,47 @@ export async function deleteQuestion(questionId) {
 }
 
 export async function issueCertificate(studentId) {
+  const existingCertificates = throwIfError(
+    await supabase
+      .from("certificates")
+      .select("*")
+      .eq("student_id", studentId)
+      .is("revoked_at", null)
+      .order("issued_at", { ascending: false })
+      .limit(1),
+  );
+  if (existingCertificates[0]) return existingCertificates[0];
+
   return throwIfError(
     await supabase.rpc("admin_issue_certificate", {
       input_student_id: studentId,
     }),
   );
+}
+
+export async function uploadCertificatePdf(studentId, file) {
+  const certificate = await issueCertificate(studentId);
+  const storagePath = `${studentId}/${certificate.id}-${safeFileName(file.name)}`;
+
+  throwIfError(
+    await supabase.storage.from("certificate-pdfs").upload(storagePath, file, {
+      cacheControl: "3600",
+      contentType: "application/pdf",
+      upsert: true,
+    }),
+  );
+
+  throwIfError(
+    await supabase
+      .from("certificates")
+      .update({
+        storage_path: storagePath,
+        original_file_name: file.name,
+      })
+      .eq("id", certificate.id),
+  );
+
+  return certificate;
 }
 
 function recruitmentCampaignSlug(name) {
@@ -506,11 +578,30 @@ export async function deleteRecruitmentCampaign(campaignId) {
 }
 
 export async function saveRegistrationForm(form) {
-  const requiredSystemKeys = new Set(["full_name", "email"]);
-  const fields = form.fields.map((field) => ({
-    ...field,
-    required: requiredSystemKeys.has(field.key) ? true : Boolean(field.required),
-  }));
+  const protectedKeys = Object.keys(protectedFieldDefinitions);
+  const fieldsByKey = new Map(
+    form.fields.map((field) => [
+      field.key,
+      {
+        ...field,
+        options: Array.isArray(field.options) ? field.options : [],
+      },
+    ]),
+  );
+  const fields = [
+    ...protectedKeys.map((key) => ({
+      ...(fieldsByKey.get(key) ?? protectedFieldDefinitions[key]),
+      ...protectedFieldDefinitions[key],
+    })),
+    ...form.fields
+      .filter((field) => !protectedKeys.includes(field.key))
+      .map((field) => ({
+        ...field,
+        required: Boolean(field.required),
+        options: Array.isArray(field.options) ? field.options : [],
+      })),
+  ];
+
   return throwIfError(
     await supabase
       .from("registration_forms")
@@ -568,4 +659,8 @@ export async function deleteNews(newsItem) {
       await supabase.storage.from("news-media").remove([newsItem.mediaPath]),
     );
   }
+}
+
+export async function clearRegistrationData() {
+  return throwIfError(await supabase.rpc("admin_clear_registration_data"));
 }

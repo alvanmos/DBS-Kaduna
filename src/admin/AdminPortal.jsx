@@ -6,6 +6,7 @@ import {
   addQuestion,
   approveInstructor,
   assignStudentInstructor,
+  clearRegistrationData,
   createRecruitmentCampaign,
   deleteRecruitmentCampaign,
   deleteNews,
@@ -17,6 +18,7 @@ import {
   publishNews,
   saveRegistrationForm,
   updateInstructor,
+  uploadCertificatePdf,
   uploadLessonPdf,
 } from "./adminRepository.js";
 import {
@@ -213,6 +215,8 @@ export function AdminPortal() {
       runAction(() => deleteQuestion(questionId)),
     issueCertificate: (studentId) =>
       runAction(() => issueCertificate(studentId)),
+    uploadCertificatePdf: (studentId, file) =>
+      runAction(() => uploadCertificatePdf(studentId, file)),
     createRecruitmentCampaign: (campaign) =>
       runAction(() => createRecruitmentCampaign(campaign)),
     deleteRecruitmentCampaign: (campaignId) =>
@@ -221,6 +225,7 @@ export function AdminPortal() {
       runAction(() => saveRegistrationForm(form)),
     publishNews: (newsItem) => runAction(() => publishNews(newsItem)),
     deleteNews: (newsItem) => runAction(() => deleteNews(newsItem)),
+    clearRegistrationData: () => runAction(() => clearRegistrationData()),
   };
 
   if (status === "loading") {

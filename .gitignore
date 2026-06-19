@@ -3,10 +3,15 @@ dist/
 .npm-cache/
 .vite/
 .env*.local
+.env*
+!.env.example
 *.log
+.tmp-*
+.vercel-global/
 .vite-server.pid
 .chrome-cdp.pid
 qa-home-*.png
 qa-admin-*.png
 qa-comparison.png
+qa-live-*.png
 .vercel

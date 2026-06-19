@@ -14,6 +14,8 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react";
 import {
+  downloadCertificatePdf,
+  downloadLessonPdf,
   loadStudentDashboard,
   openLessonPdf,
   submitStudentLesson,
@@ -40,16 +42,6 @@ function statusLabel(status) {
 function answerText(answer) {
   if (typeof answer === "string") return answer;
   return answer == null ? "" : String(answer);
-}
-
-function downloadCertificate(certificate, studentName) {
-  const content = `<!doctype html><html><head><meta charset="utf-8"><title>DBS Kaduna Certificate</title><style>body{font-family:Georgia,serif;text-align:center;padding:80px;color:#071c45}main{border:10px double #0c4da2;padding:70px}h1{font-size:42px}h2{color:#08783d;font-size:34px}p{font-family:Arial,sans-serif}strong{font-size:20px}</style></head><body><main><h1>Discover Bible School, Kaduna</h1><p>Certificate of Completion</p><h2>${studentName}</h2><p>has successfully completed the 26-lesson Discover Bible Study course.</p><strong>${certificate.verification_code}</strong><p>Issued ${new Date(certificate.issued_at).toLocaleDateString()}</p></main></body></html>`;
-  const url = URL.createObjectURL(new Blob([content], { type: "text/html" }));
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = `DBS-Kaduna-Certificate-${certificate.verification_code}.html`;
-  anchor.click();
-  URL.revokeObjectURL(url);
 }
 
 export function StudentDashboard({ profile, onSignOut }) {
@@ -168,7 +160,10 @@ export function StudentDashboard({ profile, onSignOut }) {
           <section className="portal-panel portal-lesson-workspace">
             <div className="portal-panel-heading">
               <div><p>Lesson {selectedLesson}</p><h2>{currentLesson?.title}</h2><span className={`portal-status portal-status--${currentStatus}`}>{statusLabel(currentStatus)}</span></div>
-              <button className="portal-secondary-button" type="button" disabled={!currentLesson?.storage_path || currentStatus === "locked"} onClick={() => openLessonPdf(currentLesson?.storage_path).catch((error) => setMessage(error.message))}><FilePdf size={19} />Open lesson PDF</button>
+              <div className="portal-lesson-actions">
+                <button className="portal-secondary-button" type="button" disabled={!currentLesson?.storage_path || currentStatus === "locked"} onClick={() => openLessonPdf(currentLesson?.storage_path).catch((error) => setMessage(error.message))}><FilePdf size={19} />Open lesson PDF</button>
+                <button className="portal-secondary-button" type="button" disabled={!currentLesson?.storage_path || currentStatus === "locked"} onClick={() => downloadLessonPdf(currentLesson?.storage_path, currentLesson?.original_file_name).catch((error) => setMessage(error.message))}><DownloadSimple size={19} />Download lesson</button>
+              </div>
             </div>
 
             {currentStatus === "locked" ? (
@@ -198,8 +193,8 @@ export function StudentDashboard({ profile, onSignOut }) {
         {certificate && (
           <section className="portal-panel portal-certificate-access">
             <Certificate size={40} weight="duotone" />
-            <div><p>Certificate approved</p><h2>Your completion certificate is ready</h2><span>Verification code: {certificate.verification_code}</span></div>
-            <button className="portal-primary-button" type="button" onClick={() => downloadCertificate(certificate, profile.full_name)}><DownloadSimple size={19} />Download certificate</button>
+            <div><p>Certificate approved</p><h2>Your completion certificate is ready</h2><span>{certificate.storage_path ? `Verification code: ${certificate.verification_code}` : "Your certificate PDF will appear here after the administrator uploads it."}</span></div>
+            <button className="portal-primary-button" type="button" disabled={!certificate.storage_path} onClick={() => downloadCertificatePdf(certificate.storage_path, certificate.original_file_name).catch((error) => setMessage(error.message))}><DownloadSimple size={19} />Download certificate PDF</button>
           </section>
         )}
       </main>

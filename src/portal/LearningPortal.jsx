@@ -2,15 +2,16 @@ import React, { useEffect, useState } from "react";
 import {
   ArrowLeft,
   CheckCircle,
-  EnvelopeSimple,
   GraduationCap,
   LockKey,
+  User,
   UsersThree,
   WarningCircle,
 } from "@phosphor-icons/react";
 import { getAuthFlowType, isSupabaseConfigured, supabase } from "../lib/supabase.js";
 import { StudentDashboard } from "./StudentDashboard.jsx";
 import { InstructorDashboard } from "./InstructorDashboard.jsx";
+import { resolveLoginIdentifier } from "./portalRepository.js";
 import "./portal.css";
 
 const roleConfig = {
@@ -31,7 +32,7 @@ const roleConfig = {
 function friendlyError(error) {
   if (!error) return "";
   if (error.message?.toLowerCase().includes("invalid login credentials")) {
-    return "The email address or password is incorrect.";
+    return "The username, email, or password is incorrect.";
   }
   return error.message || "Authentication could not be completed.";
 }
@@ -39,7 +40,7 @@ function friendlyError(error) {
 function RoleLogin({ role, mode, message, onSignIn, onSetPassword, onReset }) {
   const config = roleConfig[role];
   const Icon = config.Icon;
-  const [email, setEmail] = useState("");
+  const [identity, setIdentity] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -62,18 +63,18 @@ function RoleLogin({ role, mode, message, onSignIn, onSetPassword, onReset }) {
     setBusy(true);
     const result = isSetup
       ? await onSetPassword(password)
-      : await onSignIn(email, password);
+      : await onSignIn(identity, password);
     setError(result);
     setBusy(false);
   }
 
   async function resetPassword() {
-    if (!email.trim()) {
-      setError("Enter your email address first.");
+    if (!identity.trim()) {
+      setError("Enter your username or email first.");
       return;
     }
     setBusy(true);
-    const result = await onReset(email);
+    const result = await onReset(identity);
     setBusy(false);
     if (result) setError(result);
     else setNotice("A secure password-reset link has been sent to your email.");
@@ -101,13 +102,13 @@ function RoleLogin({ role, mode, message, onSignIn, onSetPassword, onReset }) {
             ? "The Supabase connection is not configured for this deployment."
             : isSetup
             ? "Your invitation is verified. Create the password you will use for future access."
-            : `Sign in to your ${config.label.toLowerCase()} learning dashboard.`}
+            : `Sign in to your ${config.label.toLowerCase()} learning dashboard with your username and password.`}
         </span>
         {!isUnavailable && <form onSubmit={submit}>
           {!isSetup && (
             <label>
-              Email address
-              <span><EnvelopeSimple aria-hidden="true" size={20} /><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="username" required /></span>
+              Username or email
+              <span><User aria-hidden="true" size={20} /><input type="text" value={identity} onChange={(event) => setIdentity(event.target.value)} autoComplete="username" required /></span>
             </label>
           )}
           <label>
@@ -197,10 +198,18 @@ export function LearningPortal({ role }) {
     };
   }, [config.dashboardPath, config.label, needsPassword, role]);
 
-  async function signIn(email, password) {
+  async function signIn(identifier, password) {
     setMessage("");
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
-    return friendlyError(error);
+    try {
+      const email = await resolveLoginIdentifier(role, identifier);
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      return friendlyError(error);
+    } catch (error) {
+      return friendlyError(error);
+    }
   }
 
   async function setPassword(password) {
@@ -211,11 +220,19 @@ export function LearningPortal({ role }) {
     return "";
   }
 
-  async function resetPassword(email) {
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-      redirectTo: `${window.location.origin}${config.loginPath}?type=recovery`,
-    });
-    return friendlyError(error);
+  async function resetPassword(identifier) {
+    try {
+      const email = await resolveLoginIdentifier(role, identifier);
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        email.trim().toLowerCase(),
+        {
+          redirectTo: `${window.location.origin}${config.loginPath}?type=recovery`,
+        },
+      );
+      return friendlyError(error);
+    } catch (error) {
+      return friendlyError(error);
+    }
   }
 
   async function signOut() {
