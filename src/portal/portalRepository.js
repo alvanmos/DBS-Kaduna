@@ -8,9 +8,20 @@ function throwIfError(result) {
 function isMissingMessagingSchema(error) {
   return (
     error?.code === "42P01" ||
+    error?.code === "PGRST202" ||
     error?.code === "PGRST205" ||
-    error?.message?.includes("portal_messages")
+    error?.message?.includes("portal_messages") ||
+    error?.message?.includes("schema cache")
   );
+}
+
+function throwIfMessagingUnavailable(result) {
+  if (result.error && isMissingMessagingSchema(result.error)) {
+    throw new Error(
+      "Messaging is being updated. Please try again shortly or contact DBS Kaduna support.",
+    );
+  }
+  return throwIfError(result);
 }
 
 async function loadPortalMessages(query) {
@@ -342,7 +353,7 @@ export async function deleteStudentData() {
 }
 
 export async function sendStudentMessage(body) {
-  return throwIfError(
+  return throwIfMessagingUnavailable(
     await supabase.rpc("student_send_message", {
       input_body: body,
     }),
@@ -350,7 +361,7 @@ export async function sendStudentMessage(body) {
 }
 
 export async function sendInstructorMessageToStudent(studentId, body) {
-  return throwIfError(
+  return throwIfMessagingUnavailable(
     await supabase.rpc("instructor_send_student_message", {
       input_student_id: studentId,
       input_body: body,
@@ -359,7 +370,7 @@ export async function sendInstructorMessageToStudent(studentId, body) {
 }
 
 export async function sendInstructorMessageToAdmin(body) {
-  return throwIfError(
+  return throwIfMessagingUnavailable(
     await supabase.rpc("instructor_send_admin_message", {
       input_body: body,
     }),

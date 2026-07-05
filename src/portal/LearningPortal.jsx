@@ -236,8 +236,10 @@ export function LearningPortal({ role }) {
   }
 
   async function signOut(redirectPath = config.loginPath) {
+    const targetPath =
+      typeof redirectPath === "string" ? redirectPath : config.loginPath;
     await supabase.auth.signOut();
-    window.location.assign(redirectPath);
+    window.location.replace(targetPath);
   }
 
   if (status === "loading") {

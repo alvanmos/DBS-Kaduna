@@ -106,9 +106,20 @@ function isMissingRecruitmentSchema(error) {
 function isMissingMessagingSchema(error) {
   return (
     error?.code === "42P01" ||
+    error?.code === "PGRST202" ||
     error?.code === "PGRST205" ||
-    error?.message?.includes("portal_messages")
+    error?.message?.includes("portal_messages") ||
+    error?.message?.includes("schema cache")
   );
+}
+
+function throwIfMessagingUnavailable(result) {
+  if (result.error && isMissingMessagingSchema(result.error)) {
+    throw new Error(
+      "Messaging is being updated. Please try again shortly or contact DBS Kaduna support.",
+    );
+  }
+  return throwIfError(result);
 }
 
 async function loadRecruitmentData() {
@@ -697,7 +708,7 @@ export async function clearRegistrationData() {
 }
 
 export async function sendAdminMessageToInstructor(instructorId, body) {
-  return throwIfError(
+  return throwIfMessagingUnavailable(
     await supabase.rpc("admin_send_instructor_message", {
       input_instructor_id: instructorId,
       input_body: body,
