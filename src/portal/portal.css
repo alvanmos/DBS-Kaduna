@@ -181,6 +181,11 @@
   background: #e9f6ef;
 }
 
+.portal-inline-message.is-error {
+  color: #9d2535;
+  background: #fff0f2;
+}
+
 .portal-shell {
   min-height: 100vh;
   color: #102346;
@@ -437,6 +442,14 @@
   gap: 20px;
 }
 
+.portal-support-layout,
+.portal-conversation-grid {
+  margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
 .portal-lesson-list,
 .portal-student-list {
   margin-top: 16px;
@@ -603,6 +616,10 @@
 }
 
 .portal-question-form textarea,
+.portal-detail-form input,
+.portal-detail-form select,
+.portal-detail-form textarea,
+.portal-message-form textarea,
 .portal-review-fields input,
 .portal-review-fields textarea {
   width: 100%;
@@ -613,6 +630,115 @@
   border-radius: 8px;
   font: inherit;
   resize: vertical;
+}
+
+.portal-detail-form {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.portal-detail-form label {
+  display: grid;
+  gap: 6px;
+  color: #394b66;
+  font-size: 0.73rem;
+  font-weight: 750;
+}
+
+.portal-detail-checkbox {
+  min-height: 46px;
+  padding: 11px 12px;
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e7ed;
+  border-radius: 9px;
+}
+
+.portal-detail-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--portal-green);
+}
+
+.portal-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.portal-danger-button {
+  min-height: 40px;
+  padding: 8px 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #9d2535;
+  background: #fff0f2;
+  border: 1px solid #f1c9d0;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.portal-danger-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.portal-message-thread {
+  max-height: 330px;
+  margin-top: 18px;
+  display: grid;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.portal-message-card {
+  max-width: 88%;
+  padding: 12px 13px;
+  color: #384b68;
+  background: #f8fafc;
+  border: 1px solid #dde5ee;
+  border-radius: 12px;
+}
+
+.portal-message-card--own {
+  margin-left: auto;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--portal-blue), var(--portal-navy));
+  border-color: transparent;
+}
+
+.portal-message-card strong,
+.portal-message-card small {
+  display: block;
+}
+
+.portal-message-card strong {
+  font-size: 0.72rem;
+}
+
+.portal-message-card p {
+  margin: 7px 0;
+  font-size: 0.77rem;
+  line-height: 1.55;
+}
+
+.portal-message-card small {
+  font-size: 0.65rem;
+  opacity: 0.78;
+}
+
+.portal-message-form {
+  margin-top: 16px;
+  display: grid;
+  gap: 10px;
 }
 
 .portal-feedback {
@@ -798,7 +924,9 @@
 
 @media (max-width: 980px) {
   .portal-learning-layout,
-  .portal-teacher-layout {
+  .portal-teacher-layout,
+  .portal-support-layout,
+  .portal-conversation-grid {
     grid-template-columns: 1fr;
   }
 

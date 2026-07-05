@@ -50,6 +50,57 @@ const loginOptions = [
 const whatsappNumber = "2348100171970";
 const studentRegistration = "/register/student";
 const instructorRegistration = "/register/volunteer-instructor";
+const howItWorksSteps = [
+  {
+    title: "Register for Free",
+    description:
+      "Start your Bible study journey by completing the online registration form.",
+  },
+  {
+    title: "Get Access to Bible Lessons",
+    description:
+      "After registration, you will be enrolled into the Discover Bible School programme. You will receive access to Bible study lessons that you can read, download, and study.",
+  },
+  {
+    title: "Study Each Lesson",
+    description:
+      "Each lesson is designed to help you understand the Bible better and grow spiritually. Read the lesson carefully, reflect on the message, and prepare to answer the study questions.",
+  },
+  {
+    title: "Submit Your Answers",
+    description:
+      "At the end of each lesson, you will answer the questions provided and submit them online. Your responses help us know your progress and guide you better.",
+  },
+  {
+    title: "Receive Teacher Feedback",
+    description:
+      "A trained Bible instructor will review your answers, make helpful comments, and guide you where necessary. You can also receive encouragement and support as you continue the lessons.",
+  },
+  {
+    title: "Track Your Progress",
+    description:
+      "Your progress will be recorded as you complete each lesson. This helps both you and your instructor know how far you have gone in the programme.",
+  },
+  {
+    title: "Complete the Course and Receive a Certificate",
+    description:
+      "After completing the required lessons, you will receive a certificate of completion from Discover Bible School, Kaduna. This certificate shows that you have successfully completed the Bible study programme.",
+  },
+  {
+    title: "Continue Growing Spiritually",
+    description:
+      "The goal of Discover Bible School is not just to complete lessons, but to help you know God better, understand His Word, and apply Bible truths in your daily life.",
+  },
+];
+
+function formatNewsDate(value) {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("en-NG", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(value));
+}
 
 function LoginMenu({ isOpen, menuId, onToggle, variant = "action" }) {
   const menuRef = useRef(null);
@@ -309,7 +360,7 @@ export function App() {
           <a className="site-nav__link" href="#study-guides">
             Study Guides
           </a>
-          <a className="site-nav__link" href="#welcome">
+          <a className="site-nav__link" href="#how-it-works">
             How It Works
           </a>
           <a className="site-nav__link" href={instructorRegistration}>
@@ -348,6 +399,9 @@ export function App() {
               <a className="news-ticker__content" href="/news" target="_blank" rel="noreferrer">
                 <Newspaper aria-hidden="true" size={17} weight="fill" />
                 <strong>{latestNews.title}</strong>
+                <time dateTime={latestNews.publishedAt}>
+                  {formatNewsDate(latestNews.publishedAt)}
+                </time>
               </a>
             </div>
           )}
@@ -400,6 +454,26 @@ export function App() {
             onNext={showNextGuide}
             onPrevious={showPreviousGuide}
           />
+        </div>
+      </section>
+
+      <section className="how-it-works" id="how-it-works" aria-labelledby="how-it-works-title">
+        <div className="how-it-works__header">
+          <p>How It Works</p>
+          <h2 id="how-it-works-title">A simple path through the Discover Bible School journey</h2>
+          <span>
+            From registration to certificate, each step is designed to help you study the Bible with guidance, feedback, and steady spiritual growth.
+          </span>
+        </div>
+
+        <div className="how-it-works__grid">
+          {howItWorksSteps.map((step, index) => (
+            <article className="how-it-works__card" key={step.title}>
+              <small>Step {index + 1}</small>
+              <h3>{step.title}</h3>
+              <p>{step.description}</p>
+            </article>
+          ))}
         </div>
       </section>
 

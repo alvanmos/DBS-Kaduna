@@ -8,17 +8,23 @@ import {
   FilePdf,
   GraduationCap,
   LockKey,
+  PaperPlaneTilt,
+  PencilSimpleLine,
   Phone,
   SignOut,
+  Trash,
   UserCircle,
   WarningCircle,
 } from "@phosphor-icons/react";
 import {
+  deleteStudentData,
   downloadCertificatePdf,
   downloadLessonPdf,
   loadStudentDashboard,
   openLessonPdf,
+  sendStudentMessage,
   submitStudentLesson,
+  updateStudentData,
 } from "./portalRepository.js";
 
 function lessonStatus(progress, lessonNumber) {
@@ -44,12 +50,101 @@ function answerText(answer) {
   return answer == null ? "" : String(answer);
 }
 
-export function StudentDashboard({ profile, onSignOut }) {
+function formatMessageTime(value) {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("en-NG", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+function editableStudentFields(registrationForm) {
+  return (registrationForm?.fields ?? []).filter(
+    (field) => !["password", "privacy_consent"].includes(field.key),
+  );
+}
+
+function studentFieldValue(field, dashboard) {
+  const registrationData = dashboard.student.registration_data ?? {};
+  if (field.key === "full_name") return dashboard.student.full_name ?? dashboard.profile.full_name ?? "";
+  if (field.key === "email") return dashboard.student.email ?? dashboard.profile.email ?? "";
+  if (field.key === "username") return dashboard.profile.username ?? registrationData.username ?? "";
+  if (field.key === "phone") return dashboard.student.whatsapp ?? dashboard.profile.phone ?? "";
+  if (field.key === "address") return dashboard.student.address ?? "";
+  if (field.key === "denomination") return dashboard.student.denomination ?? "";
+  if (field.key === "is_adventist") return Boolean(dashboard.student.is_adventist);
+  if (field.type === "checkbox") return Boolean(registrationData[field.key]);
+  return registrationData[field.key] ?? "";
+}
+
+function buildStudentFormState(dashboard) {
+  return Object.fromEntries(
+    editableStudentFields(dashboard.registrationForm).map((field) => [
+      field.key,
+      studentFieldValue(field, dashboard),
+    ]),
+  );
+}
+
+function StudentDetailField({ field, value, onChange }) {
+  if (field.type === "checkbox") {
+    return (
+      <label className="portal-detail-checkbox">
+        <input
+          type="checkbox"
+          checked={Boolean(value)}
+          onChange={(event) => onChange(field.key, event.target.checked)}
+        />
+        <span>{field.label}</span>
+      </label>
+    );
+  }
+
+  return (
+    <label>
+      <span>{field.label}</span>
+      {field.type === "textarea" ? (
+        <textarea
+          rows="3"
+          value={value ?? ""}
+          onChange={(event) => onChange(field.key, event.target.value)}
+        />
+      ) : field.type === "select" ? (
+        <select
+          value={value ?? ""}
+          onChange={(event) => onChange(field.key, event.target.value)}
+        >
+          <option value="">Choose an option</option>
+          {(field.options ?? []).map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <input
+          type={field.type === "email" ? "email" : field.type === "tel" ? "tel" : "text"}
+          value={value ?? ""}
+          onChange={(event) => onChange(field.key, event.target.value)}
+        />
+      )}
+    </label>
+  );
+}
+
+export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
   const [data, setData] = useState(null);
   const [selectedLesson, setSelectedLesson] = useState(1);
   const [answers, setAnswers] = useState({});
   const [status, setStatus] = useState("loading");
-  const [message, setMessage] = useState("");
+  const [lessonMessage, setLessonMessage] = useState("");
+  const [studentForm, setStudentForm] = useState({});
+  const [detailsNotice, setDetailsNotice] = useState(null);
+  const [conversationNotice, setConversationNotice] = useState(null);
+  const [studentMessageDraft, setStudentMessageDraft] = useState("");
+  const [isSavingDetails, setIsSavingDetails] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
 
   async function refresh() {
     try {
@@ -57,7 +152,7 @@ export function StudentDashboard({ profile, onSignOut }) {
       setData(dashboard);
       setStatus("ready");
     } catch (error) {
-      setMessage(error.message);
+      setLessonMessage(error.message);
       setStatus("error");
     }
   }
@@ -76,6 +171,10 @@ export function StudentDashboard({ profile, onSignOut }) {
     ) ?? [],
     [data, lessonQuestions],
   );
+  const detailFields = useMemo(
+    () => editableStudentFields(data?.registrationForm),
+    [data],
+  );
 
   useEffect(() => {
     setAnswers(
@@ -88,11 +187,17 @@ export function StudentDashboard({ profile, onSignOut }) {
     );
   }, [lessonQuestions, lessonSubmissions]);
 
+  useEffect(() => {
+    if (data) {
+      setStudentForm(buildStudentFormState(data));
+    }
+  }, [data]);
+
   if (status === "loading") {
     return <main className="portal-loading"><p>Loading your lessons...</p></main>;
   }
   if (status === "error") {
-    return <main className="portal-error"><WarningCircle size={42} /><h1>Dashboard unavailable</h1><p>{message}</p><button type="button" onClick={refresh}>Try again</button></main>;
+    return <main className="portal-error"><WarningCircle size={42} /><h1>Dashboard unavailable</h1><p>{lessonMessage}</p><button type="button" onClick={refresh}>Try again</button></main>;
   }
 
   const currentLesson = data.lessons.find((lesson) => lesson.number === selectedLesson);
@@ -101,16 +206,84 @@ export function StudentDashboard({ profile, onSignOut }) {
   const progressPercentage = Math.round((completedCount / 26) * 100);
   const canAnswer = ["available", "returned"].includes(currentStatus);
   const certificate = data.certificates[0];
+  const studentMessages = data.messages ?? [];
 
   async function submitLesson(event) {
     event.preventDefault();
-    setMessage("");
+    setLessonMessage("");
     try {
       await submitStudentLesson(selectedLesson, answers);
-      setMessage("Lesson submitted to your instructor.");
+      setLessonMessage("Lesson submitted to your instructor.");
       await refresh();
     } catch (error) {
-      setMessage(error.message);
+      setLessonMessage(error.message);
+    }
+  }
+
+  function updateStudentForm(field, value) {
+    setStudentForm((current) => ({ ...current, [field]: value }));
+  }
+
+  async function saveStudentDetails(event) {
+    event.preventDefault();
+    setDetailsNotice(null);
+    setIsSavingDetails(true);
+    try {
+      await updateStudentData(studentForm);
+      setDetailsNotice({
+        tone: "success",
+        text: "Your details have been updated.",
+      });
+      await refresh();
+    } catch (error) {
+      setDetailsNotice({
+        tone: "error",
+        text: error.message,
+      });
+    } finally {
+      setIsSavingDetails(false);
+    }
+  }
+
+  async function removeStudentAccount() {
+    const confirmed = window.confirm(
+      "Delete your DBS Kaduna personal data and dashboard access? This prototype action removes your student record, lesson history, certificates, and messages from the app and signs you out.",
+    );
+    if (!confirmed) return;
+
+    setDetailsNotice(null);
+    setIsDeletingAccount(true);
+    try {
+      await deleteStudentData();
+      await onDeleteAccount();
+    } catch (error) {
+      setDetailsNotice({
+        tone: "error",
+        text: error.message,
+      });
+      setIsDeletingAccount(false);
+    }
+  }
+
+  async function sendInstructorNote(event) {
+    event.preventDefault();
+    setConversationNotice(null);
+    setIsSendingMessage(true);
+    try {
+      await sendStudentMessage(studentMessageDraft);
+      setStudentMessageDraft("");
+      setConversationNotice({
+        tone: "success",
+        text: "Your message has been sent to your instructor.",
+      });
+      await refresh();
+    } catch (error) {
+      setConversationNotice({
+        tone: "error",
+        text: error.message,
+      });
+    } finally {
+      setIsSendingMessage(false);
     }
   }
 
@@ -141,6 +314,119 @@ export function StudentDashboard({ profile, onSignOut }) {
           ) : <p className="portal-muted">The administrator will assign an instructor shortly.</p>}
         </section>
 
+        <div className="portal-support-layout">
+          <section className="portal-panel">
+            <div className="portal-panel-heading">
+              <div>
+                <p>Privacy & data controls</p>
+                <h2>Correct or delete your information</h2>
+                <span>Keep your contact and registration details accurate, or remove your student record from this prototype.</span>
+              </div>
+              <PencilSimpleLine size={34} weight="duotone" />
+            </div>
+            <form className="portal-detail-form" onSubmit={saveStudentDetails}>
+              {detailFields.map((field) => (
+                <StudentDetailField
+                  key={field.key}
+                  field={field}
+                  value={studentForm[field.key]}
+                  onChange={updateStudentForm}
+                />
+              ))}
+              {detailsNotice && (
+                <div
+                  className={
+                    detailsNotice.tone === "error"
+                      ? "portal-inline-message is-error"
+                      : "portal-inline-message"
+                  }
+                >
+                  {detailsNotice.text}
+                </div>
+              )}
+              <div className="portal-detail-actions">
+                <button className="portal-primary-button" type="submit" disabled={isSavingDetails}>
+                  <PencilSimpleLine size={18} />
+                  {isSavingDetails ? "Saving..." : "Save my details"}
+                </button>
+                <button className="portal-danger-button" type="button" disabled={isDeletingAccount} onClick={removeStudentAccount}>
+                  <Trash size={18} />
+                  {isDeletingAccount ? "Deleting..." : "Delete my data"}
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <section className="portal-panel">
+            <div className="portal-panel-heading">
+              <div>
+                <p>Support conversation</p>
+                <h2>Message your instructor</h2>
+                <span>
+                  {data.instructor
+                    ? `Chat directly with ${data.instructor.name}.`
+                    : "Messaging becomes available after an instructor is assigned."}
+                </span>
+              </div>
+              <PaperPlaneTilt size={34} weight="duotone" />
+            </div>
+            {data.instructor ? (
+              <>
+                <div className="portal-message-thread" role="log" aria-label="Messages with your instructor">
+                  {studentMessages.length === 0 ? (
+                    <div className="portal-empty">No messages yet. Send your first question or update.</div>
+                  ) : studentMessages.map((threadMessage) => {
+                    const isOwnMessage = threadMessage.sender_profile_id === data.profile.id;
+                    return (
+                      <article
+                        className={
+                          isOwnMessage
+                            ? "portal-message-card portal-message-card--own"
+                            : "portal-message-card"
+                        }
+                        key={threadMessage.id}
+                      >
+                        <strong>{isOwnMessage ? "You" : data.instructor.name}</strong>
+                        <p>{threadMessage.body}</p>
+                        <small>{formatMessageTime(threadMessage.created_at)}</small>
+                      </article>
+                    );
+                  })}
+                </div>
+                <form className="portal-message-form" onSubmit={sendInstructorNote}>
+                  <label>
+                    <span className="sr-only">Message your instructor</span>
+                    <textarea
+                      rows="4"
+                      value={studentMessageDraft}
+                      onChange={(event) => setStudentMessageDraft(event.target.value)}
+                      placeholder="Ask a question, request prayer, or share a lesson update."
+                      required
+                    />
+                  </label>
+                  {conversationNotice && (
+                    <div
+                      className={
+                        conversationNotice.tone === "error"
+                          ? "portal-inline-message is-error"
+                          : "portal-inline-message"
+                      }
+                    >
+                      {conversationNotice.text}
+                    </div>
+                  )}
+                  <button className="portal-primary-button" type="submit" disabled={isSendingMessage}>
+                    <PaperPlaneTilt size={18} />
+                    {isSendingMessage ? "Sending..." : "Send message"}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div className="portal-empty">Your instructor conversation will appear here once you are assigned.</div>
+            )}
+          </section>
+        </div>
+
         <div className="portal-learning-layout">
           <aside className="portal-panel portal-lesson-nav">
             <div className="portal-panel-heading"><div><p>Course library</p><h2>26 Lessons</h2></div></div>
@@ -161,8 +447,8 @@ export function StudentDashboard({ profile, onSignOut }) {
             <div className="portal-panel-heading">
               <div><p>Lesson {selectedLesson}</p><h2>{currentLesson?.title}</h2><span className={`portal-status portal-status--${currentStatus}`}>{statusLabel(currentStatus)}</span></div>
               <div className="portal-lesson-actions">
-                <button className="portal-secondary-button" type="button" disabled={!currentLesson?.storage_path || currentStatus === "locked"} onClick={() => openLessonPdf(currentLesson?.storage_path).catch((error) => setMessage(error.message))}><FilePdf size={19} />Open lesson PDF</button>
-                <button className="portal-secondary-button" type="button" disabled={!currentLesson?.storage_path || currentStatus === "locked"} onClick={() => downloadLessonPdf(currentLesson?.storage_path, currentLesson?.original_file_name).catch((error) => setMessage(error.message))}><DownloadSimple size={19} />Download lesson</button>
+                <button className="portal-secondary-button" type="button" disabled={!currentLesson?.storage_path || currentStatus === "locked"} onClick={() => openLessonPdf(currentLesson?.storage_path).catch((error) => setLessonMessage(error.message))}><FilePdf size={19} />Open lesson PDF</button>
+                <button className="portal-secondary-button" type="button" disabled={!currentLesson?.storage_path || currentStatus === "locked"} onClick={() => downloadLessonPdf(currentLesson?.storage_path, currentLesson?.original_file_name).catch((error) => setLessonMessage(error.message))}><DownloadSimple size={19} />Download lesson</button>
               </div>
             </div>
 
@@ -183,7 +469,7 @@ export function StudentDashboard({ profile, onSignOut }) {
                     </article>
                   );
                 })}
-                {message && <div className="portal-inline-message">{message}</div>}
+                {lessonMessage && <div className="portal-inline-message">{lessonMessage}</div>}
                 {canAnswer && <button className="portal-primary-button" type="submit">Submit lesson answers</button>}
               </form>
             )}
@@ -194,7 +480,7 @@ export function StudentDashboard({ profile, onSignOut }) {
           <section className="portal-panel portal-certificate-access">
             <Certificate size={40} weight="duotone" />
             <div><p>Certificate approved</p><h2>Your completion certificate is ready</h2><span>{certificate.storage_path ? `Verification code: ${certificate.verification_code}` : "Your certificate PDF will appear here after the administrator uploads it."}</span></div>
-            <button className="portal-primary-button" type="button" disabled={!certificate.storage_path} onClick={() => downloadCertificatePdf(certificate.storage_path, certificate.original_file_name).catch((error) => setMessage(error.message))}><DownloadSimple size={19} />Download certificate PDF</button>
+            <button className="portal-primary-button" type="button" disabled={!certificate.storage_path} onClick={() => downloadCertificatePdf(certificate.storage_path, certificate.original_file_name).catch((error) => setLessonMessage(error.message))}><DownloadSimple size={19} />Download certificate PDF</button>
           </section>
         )}
       </main>

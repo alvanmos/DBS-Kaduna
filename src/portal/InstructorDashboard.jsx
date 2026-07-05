@@ -5,6 +5,7 @@ import {
   FilePdf,
   GraduationCap,
   LockKey,
+  PaperPlaneTilt,
   SignOut,
   Student,
   UserCircle,
@@ -15,6 +16,8 @@ import {
   openLessonPdf,
   requestGraduation,
   reviewSubmission,
+  sendInstructorMessageToAdmin,
+  sendInstructorMessageToStudent,
   setLessonLock,
   setLessonResult,
 } from "./portalRepository.js";
@@ -29,6 +32,14 @@ function answerText(answer) {
   return typeof answer === "string" ? answer : answer == null ? "" : String(answer);
 }
 
+function formatMessageTime(value) {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("en-NG", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
 export function InstructorDashboard({ profile, onSignOut }) {
   const [data, setData] = useState(null);
   const [selectedStudentId, setSelectedStudentId] = useState("");
@@ -36,6 +47,12 @@ export function InstructorDashboard({ profile, onSignOut }) {
   const [reviews, setReviews] = useState({});
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
+  const [studentMessageDraft, setStudentMessageDraft] = useState("");
+  const [adminMessageDraft, setAdminMessageDraft] = useState("");
+  const [studentConversationNotice, setStudentConversationNotice] = useState(null);
+  const [adminConversationNotice, setAdminConversationNotice] = useState(null);
+  const [isSendingStudentMessage, setIsSendingStudentMessage] = useState(false);
+  const [isSendingAdminMessage, setIsSendingAdminMessage] = useState(false);
 
   async function refresh() {
     try {
@@ -66,6 +83,10 @@ export function InstructorDashboard({ profile, onSignOut }) {
     ) ?? [],
     [data, lessonQuestions, selectedStudentId],
   );
+  const selectedStudentMessages = useMemo(
+    () => data?.studentMessages.filter((threadMessage) => threadMessage.student_id === selectedStudentId) ?? [],
+    [data, selectedStudentId],
+  );
 
   useEffect(() => {
     setReviews(
@@ -92,6 +113,7 @@ export function InstructorDashboard({ profile, onSignOut }) {
   const graduationRequested = data.graduationRequests.some(
     (item) => item.student_id === selectedStudentId && item.status === "pending",
   );
+  const primaryAdmin = data.admins[0] ?? null;
 
   function updateReview(submissionId, changes) {
     setReviews((current) => ({
@@ -138,6 +160,51 @@ export function InstructorDashboard({ profile, onSignOut }) {
       await refresh();
     } catch (error) {
       setMessage(error.message);
+    }
+  }
+
+  async function sendStudentNote(event) {
+    event.preventDefault();
+    if (!selectedStudent) return;
+    setStudentConversationNotice(null);
+    setIsSendingStudentMessage(true);
+    try {
+      await sendInstructorMessageToStudent(selectedStudent.id, studentMessageDraft);
+      setStudentMessageDraft("");
+      setStudentConversationNotice({
+        tone: "success",
+        text: `Message sent to ${selectedStudent.full_name}.`,
+      });
+      await refresh();
+    } catch (error) {
+      setStudentConversationNotice({
+        tone: "error",
+        text: error.message,
+      });
+    } finally {
+      setIsSendingStudentMessage(false);
+    }
+  }
+
+  async function sendAdminNote(event) {
+    event.preventDefault();
+    setAdminConversationNotice(null);
+    setIsSendingAdminMessage(true);
+    try {
+      await sendInstructorMessageToAdmin(adminMessageDraft);
+      setAdminMessageDraft("");
+      setAdminConversationNotice({
+        tone: "success",
+        text: "Message sent to the administrator.",
+      });
+      await refresh();
+    } catch (error) {
+      setAdminConversationNotice({
+        tone: "error",
+        text: error.message,
+      });
+    } finally {
+      setIsSendingAdminMessage(false);
     }
   }
 
@@ -222,6 +289,127 @@ export function InstructorDashboard({ profile, onSignOut }) {
                   <div className="portal-lesson-result-actions"><button className="portal-secondary-button" type="button" onClick={() => updateLessonResult("returned")}>Return lesson for correction</button><button className="portal-primary-button" type="button" onClick={() => updateLessonResult("completed")}>Mark lesson completed</button></div>
                 )}
                 {message && <div className="portal-inline-message">{message}</div>}
+
+                <div className="portal-conversation-grid">
+                  <section className="portal-panel">
+                    <div className="portal-panel-heading">
+                      <div>
+                        <p>Student conversation</p>
+                        <h2>Message {selectedStudent.full_name}</h2>
+                        <span>Respond directly to your assigned student from this workspace.</span>
+                      </div>
+                      <PaperPlaneTilt size={34} weight="duotone" />
+                    </div>
+                    <div className="portal-message-thread" role="log" aria-label={`Messages with ${selectedStudent.full_name}`}>
+                      {selectedStudentMessages.length === 0 ? (
+                        <div className="portal-empty">No messages yet with this student.</div>
+                      ) : selectedStudentMessages.map((threadMessage) => {
+                        const isOwnMessage = threadMessage.sender_profile_id === data.profile.id;
+                        return (
+                          <article
+                            className={
+                              isOwnMessage
+                                ? "portal-message-card portal-message-card--own"
+                                : "portal-message-card"
+                            }
+                            key={threadMessage.id}
+                          >
+                            <strong>{isOwnMessage ? "You" : selectedStudent.full_name}</strong>
+                            <p>{threadMessage.body}</p>
+                            <small>{formatMessageTime(threadMessage.created_at)}</small>
+                          </article>
+                        );
+                      })}
+                    </div>
+                    <form className="portal-message-form" onSubmit={sendStudentNote}>
+                      <label>
+                        <span className="sr-only">Message student</span>
+                        <textarea
+                          rows="4"
+                          value={studentMessageDraft}
+                          onChange={(event) => setStudentMessageDraft(event.target.value)}
+                          placeholder="Encourage the student, answer questions, or give next-step guidance."
+                          required
+                        />
+                      </label>
+                      {studentConversationNotice && (
+                        <div
+                          className={
+                            studentConversationNotice.tone === "error"
+                              ? "portal-inline-message is-error"
+                              : "portal-inline-message"
+                          }
+                        >
+                          {studentConversationNotice.text}
+                        </div>
+                      )}
+                      <button className="portal-primary-button" type="submit" disabled={isSendingStudentMessage}>
+                        <PaperPlaneTilt size={18} />
+                        {isSendingStudentMessage ? "Sending..." : "Send to student"}
+                      </button>
+                    </form>
+                  </section>
+
+                  <section className="portal-panel">
+                    <div className="portal-panel-heading">
+                      <div>
+                        <p>Administrator conversation</p>
+                        <h2>{primaryAdmin?.full_name ?? "DBS Kaduna admin"}</h2>
+                        <span>{primaryAdmin?.email ?? "Use this channel for volunteer-instructor support and coordination."}</span>
+                      </div>
+                      <UserCircle size={34} weight="duotone" />
+                    </div>
+                    <div className="portal-message-thread" role="log" aria-label="Messages with the administrator">
+                      {data.adminMessages.length === 0 ? (
+                        <div className="portal-empty">No messages yet with administration.</div>
+                      ) : data.adminMessages.map((threadMessage) => {
+                        const isOwnMessage = threadMessage.sender_profile_id === data.profile.id;
+                        const senderName = isOwnMessage ? "You" : primaryAdmin?.full_name ?? "Administrator";
+                        return (
+                          <article
+                            className={
+                              isOwnMessage
+                                ? "portal-message-card portal-message-card--own"
+                                : "portal-message-card"
+                            }
+                            key={threadMessage.id}
+                          >
+                            <strong>{senderName}</strong>
+                            <p>{threadMessage.body}</p>
+                            <small>{formatMessageTime(threadMessage.created_at)}</small>
+                          </article>
+                        );
+                      })}
+                    </div>
+                    <form className="portal-message-form" onSubmit={sendAdminNote}>
+                      <label>
+                        <span className="sr-only">Message administrator</span>
+                        <textarea
+                          rows="4"
+                          value={adminMessageDraft}
+                          onChange={(event) => setAdminMessageDraft(event.target.value)}
+                          placeholder="Send a question or update to the administrator."
+                          required
+                        />
+                      </label>
+                      {adminConversationNotice && (
+                        <div
+                          className={
+                            adminConversationNotice.tone === "error"
+                              ? "portal-inline-message is-error"
+                              : "portal-inline-message"
+                          }
+                        >
+                          {adminConversationNotice.text}
+                        </div>
+                      )}
+                      <button className="portal-primary-button" type="submit" disabled={isSendingAdminMessage}>
+                        <PaperPlaneTilt size={18} />
+                        {isSendingAdminMessage ? "Sending..." : "Send to admin"}
+                      </button>
+                    </form>
+                  </section>
+                </div>
               </>
             )}
           </section>

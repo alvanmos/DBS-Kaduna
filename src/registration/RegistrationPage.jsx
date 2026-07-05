@@ -37,6 +37,47 @@ const roleContent = {
   },
 };
 
+const privacyConsentField = {
+  key: "privacy_consent",
+  label:
+    "I consent to DBS Kaduna using my details for registration, course administration, and instructor support in line with the Privacy Notice.",
+  type: "checkbox",
+  required: true,
+  system: true,
+};
+
+const fallbackFieldsByRole = {
+  student: [
+    { key: "full_name", label: "Full name", type: "text", required: true, system: true },
+    { key: "email", label: "Email address", type: "email", required: true, system: true },
+    { key: "username", label: "Username", type: "text", required: true, system: true },
+    { key: "password", label: "Password", type: "password", required: true, system: true },
+    { key: "phone", label: "Phone number", type: "tel", required: true, system: true },
+    { key: "address", label: "Residential address", type: "textarea", required: true, system: true },
+    { key: "denomination", label: "Denomination", type: "text", required: false },
+    {
+      key: "is_adventist",
+      label: "Are you a Seventh-day Adventist?",
+      type: "checkbox",
+      required: false,
+    },
+  ],
+  volunteer_instructor: [
+    { key: "full_name", label: "Full name", type: "text", required: true, system: true },
+    { key: "email", label: "Email address", type: "email", required: true, system: true },
+    { key: "username", label: "Username", type: "text", required: true, system: true },
+    { key: "password", label: "Password", type: "password", required: true, system: true },
+    { key: "phone", label: "Phone number", type: "tel", required: true, system: true },
+    { key: "address", label: "Residential address", type: "textarea", required: true, system: true },
+    {
+      key: "statement",
+      label: "Why would you like to volunteer?",
+      type: "textarea",
+      required: true,
+    },
+  ],
+};
+
 const fieldIcons = {
   full_name: User,
   email: EnvelopeSimple,
@@ -54,13 +95,26 @@ function emptyValueFor(field) {
   return field.type === "checkbox" ? false : "";
 }
 
-function DynamicField({ field, value, onChange }) {
+function withConsentField(fields = []) {
+  const hasConsentField = fields.some((field) => field.key === privacyConsentField.key);
+  if (hasConsentField) {
+    return fields.map((field) =>
+      field.key === privacyConsentField.key
+        ? { ...field, ...privacyConsentField }
+        : field,
+    );
+  }
+  return [...fields, privacyConsentField];
+}
+
+function DynamicField({ field, value, onChange, disabled = false }) {
   const FieldIcon = fieldIcons[field.key];
   const commonProps = {
     id: `registration-${field.key}`,
     name: field.key,
     required: field.required,
     value: value ?? "",
+    disabled,
     onChange: (event) => onChange(field.key, event.target.value),
   };
 
@@ -73,6 +127,7 @@ function DynamicField({ field, value, onChange }) {
           type="checkbox"
           checked={Boolean(value)}
           required={field.required}
+          disabled={disabled}
           onChange={(event) => onChange(field.key, event.target.checked)}
         />
         <span>{field.label}</span>
@@ -164,7 +219,28 @@ export function RegistrationPage({ role }) {
       })
       .catch((error) => {
         if (controller.signal.aborted) return;
-        setMessage(readableError(error));
+        const nextMessage = readableError(error);
+        if (/not configured/i.test(nextMessage)) {
+          const fallbackForm = {
+            title: content.fallbackTitle,
+            description: content.fallbackDescription,
+            fields: fallbackFieldsByRole[content.kind] ?? [],
+          };
+          setRegistrationForm(fallbackForm);
+          setFormData({
+            website: "",
+            ...Object.fromEntries(
+              fallbackForm.fields.map((field) => [field.key, emptyValueFor(field)]),
+            ),
+            privacy_consent: false,
+          });
+          setMessage(
+            "Live registration is unavailable in this local preview because Supabase is not configured here.",
+          );
+          setPageStatus("preview");
+          return;
+        }
+        setMessage(nextMessage);
         setPageStatus("error");
       });
     return () => controller.abort();
@@ -176,7 +252,10 @@ export function RegistrationPage({ role }) {
     document.title = `${title} | DBS Kaduna`;
   }, [title]);
 
-  const fields = useMemo(() => registrationForm?.fields ?? [], [registrationForm]);
+  const fields = useMemo(
+    () => withConsentField(registrationForm?.fields ?? []),
+    [registrationForm],
+  );
   const successHref = content.kind === "student" ? "/login/student" : "/";
   const successLabel =
     content.kind === "student" ? "Proceed to student login" : "Return to homepage";
@@ -205,6 +284,7 @@ export function RegistrationPage({ role }) {
 
   const Icon = content.Icon;
   const campaignIsInvalid = campaignStatus === "invalid";
+  const registrationUnavailable = pageStatus === "preview";
 
   return (
     <main className="registration-shell">
@@ -230,6 +310,18 @@ export function RegistrationPage({ role }) {
         </div>
 
         <div className="registration-card">
+          <section className="registration-privacy-notice" aria-labelledby="privacy-notice-title">
+            <div>
+              <p>Privacy Notice</p>
+              <h3 id="privacy-notice-title">How DBS Kaduna uses your information</h3>
+            </div>
+            <ul>
+              <li>We collect the information you provide to register you, contact you, assign an instructor, and manage lessons, progress, and certificates.</li>
+              <li>Your personal details are kept for DBS Kaduna administration and learning support and are not published on the public website.</li>
+              <li>Students can request correction or deletion of their data from the student dashboard after signing in.</li>
+            </ul>
+          </section>
+
           {submitStatus === "complete" ? (
             <div className="registration-success" role="status">
               <CheckCircle aria-hidden="true" size={58} weight="duotone" />
@@ -258,6 +350,13 @@ export function RegistrationPage({ role }) {
                 </div>
               )}
 
+              {registrationUnavailable && (
+                <div className="registration-notice registration-notice--warning" role="status">
+                  <WarningCircle aria-hidden="true" size={22} />
+                  <span>{message}</span>
+                </div>
+              )}
+
               <form className="registration-form" onSubmit={submitRegistration}>
                 <label className="registration-honeypot" aria-hidden="true">
                   Website
@@ -273,6 +372,7 @@ export function RegistrationPage({ role }) {
                     field={field}
                     value={formData[field.key]}
                     onChange={updateField}
+                    disabled={registrationUnavailable}
                     key={field.key}
                   />
                 ))}
@@ -286,16 +386,22 @@ export function RegistrationPage({ role }) {
 
                 <button
                   type="submit"
-                  disabled={submitStatus === "submitting" || campaignIsInvalid}
+                  disabled={
+                    submitStatus === "submitting" ||
+                    campaignIsInvalid ||
+                    registrationUnavailable
+                  }
                 >
                   <Icon aria-hidden="true" size={22} weight="bold" />
-                  {submitStatus === "submitting"
+                  {registrationUnavailable
+                    ? "Registration unavailable in this preview"
+                    : submitStatus === "submitting"
                     ? "Submitting..."
                     : `Register as ${content.label}`}
                 </button>
                 <small className="registration-privacy">
                   Your details are sent securely to the DBS Kaduna administration team
-                  and used only for registration and course administration.
+                  and used only for registration, course administration, and learner support.
                 </small>
               </form>
             </>

@@ -4,9 +4,28 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabasePublishableKey =
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-export const isSupabaseConfigured = Boolean(
-  supabaseUrl && supabasePublishableKey,
-);
+function hasConfiguredSupabaseUrl(value) {
+  if (!value || typeof value !== "string") return false;
+  if (!/^https?:\/\//i.test(value)) return false;
+  try {
+    const parsed = new URL(value);
+    return Boolean(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function hasConfiguredSupabaseKey(value) {
+  if (typeof value !== "string") return false;
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  if (/^sb_publishable_/i.test(trimmed)) return true;
+  return /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(trimmed);
+}
+
+export const isSupabaseConfigured =
+  hasConfiguredSupabaseUrl(supabaseUrl) &&
+  hasConfiguredSupabaseKey(supabasePublishableKey);
 
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabasePublishableKey, {
