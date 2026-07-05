@@ -37,6 +37,7 @@ function validateCredentials(username, password) {
 }
 
 function validateForm(fields, formData) {
+  const consentProvided = formData.privacy_consent === true;
   for (const field of fields) {
     const value = formData[field.key];
     if (
@@ -48,6 +49,10 @@ function validateForm(fields, formData) {
     ) {
       throw new Error(`${field.label} is required.`);
     }
+  }
+
+  if (!consentProvided) {
+    throw new Error("You must consent to the Privacy Notice before registering.");
   }
 
   const email = String(formData.email ?? "").trim().toLowerCase();

@@ -10,6 +10,7 @@ const emptyData = {
   recruitmentEnrolments: [],
   registrationForms: [],
   news: [],
+  instructorMessages: [],
 };
 
 const milestoneLabels = {
@@ -60,6 +61,14 @@ const protectedFieldDefinitions = {
     required: true,
     system: true,
   },
+  privacy_consent: {
+    key: "privacy_consent",
+    label:
+      "I consent to DBS Kaduna using my details for registration, course administration, and instructor support in line with the Privacy Notice.",
+    type: "checkbox",
+    required: true,
+    system: true,
+  },
 };
 
 function capitalize(value) {
@@ -91,6 +100,14 @@ function isMissingRecruitmentSchema(error) {
     error?.message?.includes("recruitment_enrolments") ||
     error?.message?.includes("registration_forms") ||
     error?.message?.includes("volunteer_registrations")
+  );
+}
+
+function isMissingMessagingSchema(error) {
+  return (
+    error?.code === "42P01" ||
+    error?.code === "PGRST205" ||
+    error?.message?.includes("portal_messages")
   );
 }
 
@@ -138,19 +155,7 @@ function accountActivityStatus(profile, storedStatus) {
 
 export async function loadAdminData() {
   const recruitmentDataPromise = loadRecruitmentData();
-  const [
-    profiles,
-    applications,
-    instructors,
-    students,
-    lessons,
-    questions,
-    progress,
-    submissions,
-    graduationRequests,
-    certificates,
-    news,
-  ] = await Promise.all([
+  const results = await Promise.all([
     supabase.from("profiles").select("*"),
     supabase.from("instructor_applications").select("*"),
     supabase.from("instructors").select("*"),
@@ -174,7 +179,32 @@ export async function loadAdminData() {
     supabase.from("news").select("*").order("created_at", {
       ascending: false,
     }),
-  ]).then((results) => results.map(throwIfError));
+    supabase
+      .from("portal_messages")
+      .select("*")
+      .eq("channel", "admin_instructor")
+      .order("created_at"),
+  ]);
+
+  const [
+    profiles,
+    applications,
+    instructors,
+    students,
+    lessons,
+    questions,
+    progress,
+    submissions,
+    graduationRequests,
+    certificates,
+    news,
+    instructorMessages,
+  ] = results.map((result, index) => {
+    if (index === 11 && result.error && isMissingMessagingSchema(result.error)) {
+      return [];
+    }
+    return throwIfError(result);
+  });
   const [
     recruitmentCampaigns,
     recruitmentEnrolments,
@@ -386,6 +416,7 @@ export async function loadAdminData() {
     recruitmentEnrolments: mappedRecruitmentEnrolments,
     registrationForms: mappedRegistrationForms,
     news: mappedNews,
+    instructorMessages,
   };
 }
 
@@ -663,4 +694,13 @@ export async function deleteNews(newsItem) {
 
 export async function clearRegistrationData() {
   return throwIfError(await supabase.rpc("admin_clear_registration_data"));
+}
+
+export async function sendAdminMessageToInstructor(instructorId, body) {
+  return throwIfError(
+    await supabase.rpc("admin_send_instructor_message", {
+      input_instructor_id: instructorId,
+      input_body: body,
+    }),
+  );
 }

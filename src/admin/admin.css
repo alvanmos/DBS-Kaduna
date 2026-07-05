@@ -682,6 +682,10 @@
   grid-template-columns: 0.82fr 1.18fr;
 }
 
+.admin-two-column--messages {
+  margin-top: 20px;
+}
+
 .admin-panel {
   min-width: 0;
   padding: 20px;
@@ -995,6 +999,53 @@
   gap: 12px;
 }
 
+.admin-message-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-message-list__item {
+  width: 100%;
+  padding: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--admin-ink);
+  background: #f8fafc;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-message-list__item.is-active,
+.admin-message-list__item:hover {
+  background: #f2f7fd;
+  border-color: #8bb3dd;
+}
+
+.admin-message-list__item span {
+  min-width: 0;
+}
+
+.admin-message-list__item strong,
+.admin-message-list__item small {
+  display: block;
+}
+
+.admin-message-list__item strong {
+  color: var(--admin-navy);
+  font-size: 0.84rem;
+}
+
+.admin-message-list__item small {
+  margin-top: 4px;
+  color: var(--admin-muted);
+  font-size: 0.7rem;
+}
+
 .admin-instructor-card {
   padding: 17px;
   display: flex;
@@ -1074,6 +1125,55 @@
   padding: 8px 10px;
   border: 1px solid #ccd6e1;
   border-radius: 8px;
+}
+
+.admin-message-thread {
+  max-height: 360px;
+  margin-bottom: 16px;
+  display: grid;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.admin-message-card {
+  max-width: 88%;
+  padding: 13px;
+  color: #43516b;
+  background: #f8fafc;
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+}
+
+.admin-message-card--own {
+  margin-left: auto;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--admin-blue), var(--admin-navy));
+  border-color: transparent;
+}
+
+.admin-message-card strong,
+.admin-message-card small {
+  display: block;
+}
+
+.admin-message-card strong {
+  font-size: 0.72rem;
+}
+
+.admin-message-card p {
+  margin: 7px 0;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.admin-message-card small {
+  font-size: 0.67rem;
+  opacity: 0.8;
+}
+
+.admin-message-form {
+  display: grid;
+  gap: 12px;
 }
 
 .admin-policy-note {

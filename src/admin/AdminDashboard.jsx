@@ -21,6 +21,7 @@ import {
   MapPin,
   Megaphone,
   Newspaper,
+  PaperPlaneTilt,
   Plus,
   Question,
   QrCode,
@@ -120,6 +121,14 @@ function MetricCard({ label, value, detail, Icon, tone }) {
       </div>
     </article>
   );
+}
+
+function formatMessageTime(value) {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("en-NG", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
 
 function DashboardSummary({ students, instructors }) {
@@ -561,7 +570,10 @@ function StudentManagement({
 function InstructorManagement({
   instructors,
   students,
+  messages,
+  adminProfileId,
   onApproveInstructor,
+  onSendMessage,
   onUpdateInstructor,
   onNotify,
 }) {
@@ -570,8 +582,30 @@ function InstructorManagement({
       instructors.map((instructor) => [instructor.id, instructor.maxLoad]),
     ),
   );
+  const approvedInstructors = instructors.filter(
+    (instructor) => instructor.approval === "Approved" && instructor.profileId,
+  );
+  const [selectedThreadInstructorId, setSelectedThreadInstructorId] = useState(
+    approvedInstructors[0]?.id ?? "",
+  );
+  const [messageDraft, setMessageDraft] = useState("");
+  const [threadNotice, setThreadNotice] = useState(null);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
   const studentLoad = (instructorId) =>
     countWhere(students, (student) => student.instructorId === instructorId);
+  const selectedThreadInstructor =
+    approvedInstructors.find((instructor) => instructor.id === selectedThreadInstructorId) ??
+    approvedInstructors[0] ??
+    null;
+  const instructorMessages = messages.filter(
+    (threadMessage) => threadMessage.instructor_id === selectedThreadInstructor?.id,
+  );
+
+  useEffect(() => {
+    if (!selectedThreadInstructorId && approvedInstructors[0]?.id) {
+      setSelectedThreadInstructorId(approvedInstructors[0].id);
+    }
+  }, [approvedInstructors, selectedThreadInstructorId]);
 
   async function updateInstructor(instructorId, changes, message) {
     try {
@@ -591,6 +625,28 @@ function InstructorManagement({
       onNotify(`${instructor.name} approved as an instructor.`);
     } catch (error) {
       onNotify(readableError(error), "error");
+    }
+  }
+
+  async function sendInstructorMessage(event) {
+    event.preventDefault();
+    if (!selectedThreadInstructor) return;
+    setThreadNotice(null);
+    setIsSendingMessage(true);
+    try {
+      await onSendMessage(selectedThreadInstructor.id, messageDraft);
+      setMessageDraft("");
+      setThreadNotice({
+        tone: "success",
+        text: `Message sent to ${selectedThreadInstructor.name}.`,
+      });
+    } catch (error) {
+      setThreadNotice({
+        tone: "error",
+        text: readableError(error),
+      });
+    } finally {
+      setIsSendingMessage(false);
     }
   }
 
@@ -721,6 +777,110 @@ function InstructorManagement({
           })}
         </div>
       </section>
+
+      <div className="admin-two-column admin-two-column--messages">
+        <section className="admin-panel">
+          <div className="admin-panel-heading">
+            <div>
+              <h3>Instructor conversations</h3>
+              <p>Choose an approved volunteer instructor to open the admin support thread.</p>
+            </div>
+          </div>
+          {approvedInstructors.length === 0 ? (
+            <EmptyState>No approved volunteer instructors are available for messaging yet.</EmptyState>
+          ) : (
+            <div className="admin-message-list">
+              {approvedInstructors.map((instructor) => (
+                <button
+                  className={
+                    selectedThreadInstructor?.id === instructor.id
+                      ? "admin-message-list__item is-active"
+                      : "admin-message-list__item"
+                  }
+                  type="button"
+                  key={instructor.id}
+                  onClick={() => setSelectedThreadInstructorId(instructor.id)}
+                >
+                  <span>
+                    <strong>{instructor.name}</strong>
+                    <small>{instructor.email}</small>
+                  </span>
+                  <StatusBadge tone={instructor.status === "Active" ? "green" : "neutral"}>
+                    {instructor.status}
+                  </StatusBadge>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="admin-panel">
+          <div className="admin-panel-heading">
+            <div>
+              <h3>{selectedThreadInstructor?.name ?? "Administrator thread"}</h3>
+              <p>
+                {selectedThreadInstructor
+                  ? "Bidirectional support between administration and volunteer instructors."
+                  : "Select an approved instructor to begin."}
+              </p>
+            </div>
+          </div>
+          {!selectedThreadInstructor ? (
+            <EmptyState>The selected message thread will appear here.</EmptyState>
+          ) : (
+            <>
+              <div className="admin-message-thread">
+                {instructorMessages.length === 0 ? (
+                  <EmptyState>No messages yet in this instructor thread.</EmptyState>
+                ) : instructorMessages.map((threadMessage) => {
+                  const isOwnMessage = threadMessage.sender_profile_id === adminProfileId;
+                  return (
+                    <article
+                      className={
+                        isOwnMessage
+                          ? "admin-message-card admin-message-card--own"
+                          : "admin-message-card"
+                      }
+                      key={threadMessage.id}
+                    >
+                      <strong>{isOwnMessage ? "You" : selectedThreadInstructor.name}</strong>
+                      <p>{threadMessage.body}</p>
+                      <small>{formatMessageTime(threadMessage.created_at)}</small>
+                    </article>
+                  );
+                })}
+              </div>
+              <form className="admin-message-form" onSubmit={sendInstructorMessage}>
+                <label className="admin-form-grid__wide">
+                  Message
+                  <textarea
+                    rows="4"
+                    value={messageDraft}
+                    onChange={(event) => setMessageDraft(event.target.value)}
+                    placeholder="Share a decision, answer a question, or encourage the instructor."
+                    required
+                  />
+                </label>
+                {threadNotice && (
+                  <div
+                    className={
+                      threadNotice.tone === "error"
+                        ? "admin-form-error"
+                        : "admin-form-notice"
+                    }
+                  >
+                    {threadNotice.text}
+                  </div>
+                )}
+                <button className="admin-primary-button" type="submit" disabled={isSendingMessage}>
+                  <PaperPlaneTilt aria-hidden="true" size={18} />
+                  {isSendingMessage ? "Sending..." : "Send message"}
+                </button>
+              </form>
+            </>
+          )}
+        </section>
+      </div>
     </>
   );
 }
@@ -1806,7 +1966,7 @@ function RegistrationFormManagement({
             <div className="admin-panel-heading">
               <div>
                 <h3>Form fields</h3>
-                <p>Full name, email, username, and password stay compulsory because they create secure accounts.</p>
+                <p>Full name, email, username, password, and privacy consent stay compulsory because they create secure accounts and record permission to process registration data.</p>
               </div>
               <button className="admin-secondary-button" type="button" onClick={addField}>
                 <Plus aria-hidden="true" size={18} />
@@ -1815,7 +1975,7 @@ function RegistrationFormManagement({
             </div>
             <div className="admin-field-builder-list">
               {draft.fields.map((field, index) => {
-                const protectedField = ["full_name", "email", "username", "password"].includes(field.key);
+                const protectedField = ["full_name", "email", "username", "password", "privacy_consent"].includes(field.key);
                 return (
                   <article key={field.key}>
                     <label>
@@ -2054,6 +2214,7 @@ function NewsManagement({ news, onPublishNews, onDeleteNews, onNotify }) {
 }
 
 export function AdminDashboard({
+  adminProfileId,
   adminEmail,
   data,
   actions,
@@ -2117,7 +2278,10 @@ export function AdminDashboard({
       <InstructorManagement
         instructors={data.instructors}
         students={data.students}
+        messages={data.instructorMessages}
+        adminProfileId={adminProfileId}
         onApproveInstructor={actions.approveInstructor}
+        onSendMessage={actions.sendAdminMessage}
         onUpdateInstructor={actions.updateInstructor}
         onNotify={notify}
       />

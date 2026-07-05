@@ -17,6 +17,7 @@ import {
   moveQuestion,
   publishNews,
   saveRegistrationForm,
+  sendAdminMessageToInstructor,
   updateInstructor,
   uploadCertificatePdf,
   uploadLessonPdf,
@@ -223,6 +224,8 @@ export function AdminPortal() {
       runAction(() => deleteRecruitmentCampaign(campaignId)),
     saveRegistrationForm: (form) =>
       runAction(() => saveRegistrationForm(form)),
+    sendAdminMessage: (instructorId, body) =>
+      runAction(() => sendAdminMessageToInstructor(instructorId, body)),
     publishNews: (newsItem) => runAction(() => publishNews(newsItem)),
     deleteNews: (newsItem) => runAction(() => deleteNews(newsItem)),
     clearRegistrationData: () => runAction(() => clearRegistrationData()),
@@ -254,6 +257,7 @@ export function AdminPortal() {
 
   return (
     <AdminDashboard
+      adminProfileId={profile?.id ?? ""}
       adminEmail={profile?.email ?? session?.user?.email ?? ADMIN_EMAIL}
       data={data}
       actions={actions}

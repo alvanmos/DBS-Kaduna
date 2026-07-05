@@ -5,6 +5,22 @@ function throwIfError(result) {
   return result.data;
 }
 
+function isMissingMessagingSchema(error) {
+  return (
+    error?.code === "42P01" ||
+    error?.code === "PGRST205" ||
+    error?.message?.includes("portal_messages")
+  );
+}
+
+async function loadPortalMessages(query) {
+  const result = await query;
+  if (result.error && isMissingMessagingSchema(result.error)) {
+    return [];
+  }
+  return throwIfError(result);
+}
+
 export async function touchActivity() {
   if (!supabase) return;
   await supabase.rpc("touch_my_activity");
@@ -53,7 +69,7 @@ export async function loadStudentDashboard() {
   const user = userData.user;
   if (!user) throw new Error("Student login required.");
 
-  const [profileResult, studentResult, lessonsResult, questionsResult] =
+  const [profileResult, studentResult, lessonsResult, questionsResult, formResult] =
     await Promise.all([
       supabase.from("profiles").select("*").eq("id", user.id).single(),
       supabase.from("students").select("*").eq("profile_id", user.id).single(),
@@ -64,13 +80,20 @@ export async function loadStudentDashboard() {
         .eq("is_published", true)
         .order("lesson_number")
         .order("sort_order"),
+      supabase
+        .from("registration_forms")
+        .select("fields")
+        .eq("recruitment_kind", "student")
+        .eq("is_published", true)
+        .maybeSingle(),
     ]);
   const profile = throwIfError(profileResult);
   const student = throwIfError(studentResult);
   const lessons = throwIfError(lessonsResult);
   const questions = throwIfError(questionsResult);
+  const registrationForm = throwIfError(formResult);
 
-  const [progress, submissions, certificates] = await Promise.all([
+  const [progress, submissions, certificates, messages] = await Promise.all([
     supabase
       .from("student_lesson_progress")
       .select("*")
@@ -89,6 +112,14 @@ export async function loadStudentDashboard() {
       .is("revoked_at", null)
       .order("issued_at", { ascending: false })
       .then(throwIfError),
+    loadPortalMessages(
+      supabase
+      .from("portal_messages")
+      .select("*")
+      .eq("student_id", student.id)
+      .eq("channel", "student_instructor")
+      .order("created_at")
+    ),
   ]);
 
   let instructor = null;
@@ -120,11 +151,13 @@ export async function loadStudentDashboard() {
     profile,
     student,
     instructor,
+    registrationForm,
     lessons,
     questions,
     progress,
     submissions,
     certificates,
+    messages,
   };
 }
 
@@ -133,7 +166,7 @@ export async function loadInstructorDashboard() {
   const user = userData.user;
   if (!user) throw new Error("Instructor login required.");
 
-  const [profile, instructor, lessons, questions] = await Promise.all([
+  const [profile, instructor, lessons, questions, admins] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single().then(throwIfError),
     supabase.from("instructors").select("*").eq("profile_id", user.id).single().then(throwIfError),
     supabase.from("lessons").select("*").order("number").then(throwIfError),
@@ -144,6 +177,13 @@ export async function loadInstructorDashboard() {
       .order("lesson_number")
       .order("sort_order")
       .then(throwIfError),
+    supabase
+      .from("profiles")
+      .select("id,full_name,email")
+      .eq("role", "admin")
+      .eq("status", "active")
+      .order("created_at")
+      .then(throwIfError),
   ]);
   const students = throwIfError(
     await supabase
@@ -153,7 +193,7 @@ export async function loadInstructorDashboard() {
       .order("full_name"),
   );
   const studentIds = students.map((student) => student.id);
-  const [progress, submissions, graduationRequests] = studentIds.length
+  const [progress, submissions, graduationRequests, studentMessages, adminMessages] = studentIds.length
     ? await Promise.all([
         supabase
           .from("student_lesson_progress")
@@ -170,19 +210,51 @@ export async function loadInstructorDashboard() {
           .select("*")
           .in("student_id", studentIds)
           .then(throwIfError),
+        loadPortalMessages(
+          supabase
+          .from("portal_messages")
+          .select("*")
+          .in("student_id", studentIds)
+          .eq("channel", "student_instructor")
+          .order("created_at"),
+        ),
+        loadPortalMessages(
+          supabase
+          .from("portal_messages")
+          .select("*")
+          .eq("instructor_id", instructor.id)
+          .eq("channel", "admin_instructor")
+          .order("created_at"),
+        ),
       ])
-    : [[], [], []];
+    : await Promise.all([
+        Promise.resolve([]),
+        Promise.resolve([]),
+        Promise.resolve([]),
+        Promise.resolve([]),
+        loadPortalMessages(
+          supabase
+          .from("portal_messages")
+          .select("*")
+          .eq("instructor_id", instructor.id)
+          .eq("channel", "admin_instructor")
+          .order("created_at"),
+        ),
+      ]);
 
   await touchActivity();
   return {
     profile,
     instructor,
+    admins,
     students,
     lessons,
     questions,
     progress,
     submissions,
     graduationRequests,
+    studentMessages,
+    adminMessages,
   };
 }
 
@@ -253,6 +325,43 @@ export async function requestGraduation(studentId, instructorId) {
       student_id: studentId,
       requested_by_instructor_id: instructorId,
       notes: "All 26 lessons completed. Please approve graduation and certificate access.",
+    }),
+  );
+}
+
+export async function updateStudentData(formData) {
+  return throwIfError(
+    await supabase.rpc("student_update_my_data", {
+      input_payload: formData,
+    }),
+  );
+}
+
+export async function deleteStudentData() {
+  return throwIfError(await supabase.rpc("student_delete_my_account_data"));
+}
+
+export async function sendStudentMessage(body) {
+  return throwIfError(
+    await supabase.rpc("student_send_message", {
+      input_body: body,
+    }),
+  );
+}
+
+export async function sendInstructorMessageToStudent(studentId, body) {
+  return throwIfError(
+    await supabase.rpc("instructor_send_student_message", {
+      input_student_id: studentId,
+      input_body: body,
+    }),
+  );
+}
+
+export async function sendInstructorMessageToAdmin(body) {
+  return throwIfError(
+    await supabase.rpc("instructor_send_admin_message", {
+      input_body: body,
     }),
   );
 }

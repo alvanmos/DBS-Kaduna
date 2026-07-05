@@ -235,9 +235,9 @@ export function LearningPortal({ role }) {
     }
   }
 
-  async function signOut() {
+  async function signOut(redirectPath = config.loginPath) {
     await supabase.auth.signOut();
-    window.location.assign(config.loginPath);
+    window.location.assign(redirectPath);
   }
 
   if (status === "loading") {
@@ -256,7 +256,11 @@ export function LearningPortal({ role }) {
     );
   }
   return role === "student" ? (
-    <StudentDashboard profile={profile} onSignOut={signOut} />
+    <StudentDashboard
+      profile={profile}
+      onSignOut={signOut}
+      onDeleteAccount={() => signOut("/")}
+    />
   ) : (
     <InstructorDashboard profile={profile} onSignOut={signOut} />
   );

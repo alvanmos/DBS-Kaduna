@@ -15,3 +15,5 @@ qa-admin-*.png
 qa-comparison.png
 qa-live-*.png
 .vercel
+
+.env*.local

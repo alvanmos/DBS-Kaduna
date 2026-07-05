@@ -150,6 +150,41 @@
   font-size: 1.8rem;
 }
 
+.registration-privacy-notice {
+  margin-top: 20px;
+  padding: 18px;
+  background: #f8fafc;
+  border: 1px solid #dfe5ec;
+  border-radius: 14px;
+}
+
+.registration-privacy-notice p {
+  margin: 0 0 6px;
+  color: #0c4da2;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.registration-privacy-notice h3 {
+  margin: 0;
+  color: #071c45;
+  font-size: 1rem;
+}
+
+.registration-privacy-notice ul {
+  margin: 14px 0 0;
+  padding-left: 18px;
+  color: #526076;
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+.registration-privacy-notice li + li {
+  margin-top: 7px;
+}
+
 .registration-form {
   margin-top: 26px;
   display: grid;
@@ -317,6 +352,12 @@
   color: #9d2535;
   background: #fff0f2;
   border: 1px solid #f3c4cb;
+}
+
+.registration-notice--warning {
+  color: #8d620d;
+  background: #fff8e8;
+  border: 1px solid #efd49b;
 }
 
 .registration-success {
