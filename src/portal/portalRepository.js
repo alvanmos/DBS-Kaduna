@@ -5,14 +5,37 @@ function throwIfError(result) {
   return result.data;
 }
 
-function isMissingMessagingSchema(error) {
+function isMissingSchemaObject(error, names = []) {
   return (
     error?.code === "42P01" ||
     error?.code === "PGRST202" ||
     error?.code === "PGRST205" ||
-    error?.message?.includes("portal_messages") ||
-    error?.message?.includes("schema cache")
+    error?.message?.includes("schema cache") ||
+    names.some((name) => error?.message?.includes(name))
   );
+}
+
+function isMissingMessagingSchema(error) {
+  return isMissingSchemaObject(error, [
+    "portal_messages",
+    "student_send_message",
+    "instructor_send_student_message",
+    "instructor_send_admin_message",
+    "admin_send_instructor_message",
+  ]);
+}
+
+function isMissingDeleteSchema(error) {
+  return isMissingSchemaObject(error, ["student_delete_my_account_data"]);
+}
+
+function throwIfDeleteUnavailable(result) {
+  if (result.error && isMissingDeleteSchema(result.error)) {
+    throw new Error(
+      "Data deletion is being updated. Please try again shortly or contact DBS Kaduna support.",
+    );
+  }
+  return throwIfError(result);
 }
 
 function throwIfMessagingUnavailable(result) {
@@ -349,7 +372,9 @@ export async function updateStudentData(formData) {
 }
 
 export async function deleteStudentData() {
-  return throwIfError(await supabase.rpc("student_delete_my_account_data"));
+  return throwIfDeleteUnavailable(
+    await supabase.rpc("student_delete_my_account_data"),
+  );
 }
 
 export async function sendStudentMessage(body) {
