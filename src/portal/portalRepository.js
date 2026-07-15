@@ -77,6 +77,20 @@ async function markWelcomeLetterFirstLogin() {
   return result.data ?? null;
 }
 
+function welcomeLetterFirstLoginKey(profileId) {
+  return `dbs-welcome-letter-first-login:${profileId}`;
+}
+
+function rememberWelcomeLetterFirstLogin(profileId) {
+  const key = welcomeLetterFirstLoginKey(profileId);
+  const savedTimestamp = window.localStorage.getItem(key);
+  if (savedTimestamp) return savedTimestamp;
+
+  const timestamp = new Date().toISOString();
+  window.localStorage.setItem(key, timestamp);
+  return timestamp;
+}
+
 function fallbackFileName(storagePath, defaultName = "download.pdf") {
   return storagePath?.split("/").pop() || defaultName;
 }
@@ -145,7 +159,8 @@ export async function loadStudentDashboard() {
   const registrationForm = throwIfError(formResult);
   if (!profile.welcome_letter_first_login_at) {
     const firstLoginAt = await markWelcomeLetterFirstLogin();
-    if (firstLoginAt) profile.welcome_letter_first_login_at = firstLoginAt;
+    profile.welcome_letter_first_login_at =
+      firstLoginAt || rememberWelcomeLetterFirstLogin(profile.id);
   }
 
   const [progress, submissions, certificates, messages] = await Promise.all([
