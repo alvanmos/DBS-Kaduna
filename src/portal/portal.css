@@ -317,6 +317,63 @@
   border-radius: 12px;
 }
 
+.portal-welcome-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.portal-welcome-letter {
+  min-height: 76px;
+  padding: 12px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+  background: rgb(255 255 255 / 10%);
+  border: 1px solid rgb(255 255 255 / 24%);
+  border-radius: 12px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.portal-welcome-letter:hover,
+.portal-welcome-letter:focus-visible {
+  background: rgb(255 255 255 / 18%);
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.portal-welcome-letter > span,
+.portal-welcome-letter strong,
+.portal-welcome-letter small {
+  display: block;
+}
+
+.portal-welcome-letter strong {
+  font-size: 0.84rem;
+}
+
+.portal-welcome-letter small {
+  margin-top: 3px;
+  color: #d7e7f9;
+  font-size: 0.68rem;
+}
+
+.portal-welcome-letter.is-new {
+  border-color: #f6d66c;
+  animation: portal-welcome-letter-blink 1.15s steps(2, end) infinite;
+}
+
+@keyframes portal-welcome-letter-blink {
+  50% {
+    color: #fff8d9;
+    background: rgb(246 214 108 / 28%);
+    box-shadow: 0 0 0 4px rgb(246 214 108 / 24%);
+  }
+}
+
 .portal-progress-card strong,
 .portal-progress-card span {
   display: block;
@@ -959,6 +1016,11 @@
     min-width: 0;
   }
 
+  .portal-welcome-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .portal-summary-grid,
   .portal-teacher-lessons {
     grid-template-columns: 1fr;
@@ -998,5 +1060,9 @@
   .portal-auth-shell * {
     scroll-behavior: auto !important;
     transition: none !important;
+  }
+
+  .portal-welcome-letter.is-new {
+    animation: none;
   }
 }
