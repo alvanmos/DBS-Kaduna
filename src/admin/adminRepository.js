@@ -487,6 +487,23 @@ export async function updateInstructor(instructorId, changes) {
   );
 }
 
+export async function deleteAccountAsAdmin(target) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const response = await fetch("/api/delete-account", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${sessionData.session?.access_token ?? ""}`,
+    },
+    body: JSON.stringify({ target }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.error || "The account could not be deleted.");
+  }
+  return payload;
+}
+
 export async function uploadLessonPdf(lessonNumber, file) {
   const storagePath = `lesson-${String(lessonNumber).padStart(2, "0")}.pdf`;
   throwIfError(
