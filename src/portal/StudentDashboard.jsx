@@ -317,7 +317,8 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
               title="Download your DBS Kaduna welcome letter (PDF)"
             >
               <FilePdf aria-hidden="true" size={24} weight="duotone" />
-              <span><strong>Welcome letter</strong><small>{isWelcomeLetterNew ? "New - download within 7 days" : "Download PDF"}</small></span>
+              <span><strong>Welcome letter</strong><small>Download PDF</small></span>
+              {isWelcomeLetterNew ? <span className="portal-welcome-letter__badge">New</span> : null}
             </button>
             <div className="portal-progress-card"><strong>{progressPercentage}%</strong><span>{completedCount} of 26 lessons completed</span><div><i style={{ width: `${progressPercentage}%` }} /></div></div>
           </div>
