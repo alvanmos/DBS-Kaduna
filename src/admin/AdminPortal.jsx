@@ -8,6 +8,7 @@ import {
   assignStudentInstructor,
   clearRegistrationData,
   createRecruitmentCampaign,
+  deleteAccountAsAdmin,
   deleteRecruitmentCampaign,
   deleteNews,
   deleteQuestion,
@@ -207,6 +208,7 @@ export function AdminPortal() {
       runAction(() => approveInstructor(instructor, maxLoad)),
     updateInstructor: (instructorId, changes) =>
       runAction(() => updateInstructor(instructorId, changes)),
+    deleteAccount: (target) => runAction(() => deleteAccountAsAdmin(target)),
     uploadLesson: (lessonNumber, file) =>
       runAction(() => uploadLessonPdf(lessonNumber, file)),
     addQuestion: (question) => runAction(() => addQuestion(question)),

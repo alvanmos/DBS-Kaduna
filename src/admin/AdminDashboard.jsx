@@ -302,6 +302,7 @@ function StudentManagement({
   students,
   instructors,
   onAssignStudent,
+  onDeleteAccount,
   onNotify,
 }) {
   const [query, setQuery] = useState("");
@@ -320,6 +321,20 @@ function StudentManagement({
     try {
       await onAssignStudent(studentId, instructorId);
       onNotify("Student assignment updated.");
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    }
+  }
+
+  async function deleteStudent(student) {
+    const confirmed = window.confirm(
+      `Permanently delete ${student.name}'s student record, account, registration details, and learning data? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    try {
+      await onDeleteAccount({ kind: "student", id: student.id });
+      onNotify(`${student.name}'s account and details were permanently deleted.`);
     } catch (error) {
       onNotify(readableError(error), "error");
     }
@@ -503,6 +518,14 @@ function StudentManagement({
               <div className="admin-progress admin-progress--large">
                 <span style={{ width: `${selectedStudent.progress}%` }} />
               </div>
+              <button
+                className="admin-danger-button"
+                type="button"
+                onClick={() => deleteStudent(selectedStudent)}
+              >
+                <Trash aria-hidden="true" size={17} />
+                Permanently delete student
+              </button>
             </div>
           )}
         </section>
@@ -575,6 +598,7 @@ function InstructorManagement({
   onApproveInstructor,
   onSendMessage,
   onUpdateInstructor,
+  onDeleteAccount,
   onNotify,
 }) {
   const [capacityById, setCapacityById] = useState(() =>
@@ -623,6 +647,25 @@ function InstructorManagement({
         Number(capacityById[instructor.id] ?? 10),
       );
       onNotify(`${instructor.name} approved as an instructor.`);
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    }
+  }
+
+  async function deleteInstructor(instructor) {
+    const confirmed = window.confirm(
+      `Permanently delete ${instructor.name}'s instructor registration, account, and stored details? This cannot be undone. Assigned students will become unassigned.`,
+    );
+    if (!confirmed) return;
+
+    const target = instructor.registrationId
+      ? { kind: "volunteer_registration", id: instructor.registrationId }
+      : instructor.applicationId
+        ? { kind: "instructor_application", id: instructor.applicationId }
+        : { kind: "instructor", id: instructor.id };
+    try {
+      await onDeleteAccount(target);
+      onNotify(`${instructor.name}'s account and details were permanently deleted.`);
     } catch (error) {
       onNotify(readableError(error), "error");
     }
@@ -770,6 +813,14 @@ function InstructorManagement({
                           : "Reactivate"}
                       </button>
                     )}
+                    <button
+                      className="admin-danger-button"
+                      type="button"
+                      onClick={() => deleteInstructor(instructor)}
+                    >
+                      <Trash aria-hidden="true" size={17} />
+                      Permanently delete
+                    </button>
                   </div>
                 </div>
               </article>
@@ -2270,6 +2321,7 @@ export function AdminDashboard({
         students={data.students}
         instructors={data.instructors}
         onAssignStudent={actions.assignStudent}
+        onDeleteAccount={actions.deleteAccount}
         onNotify={notify}
       />
     );
@@ -2283,6 +2335,7 @@ export function AdminDashboard({
         onApproveInstructor={actions.approveInstructor}
         onSendMessage={actions.sendAdminMessage}
         onUpdateInstructor={actions.updateInstructor}
+        onDeleteAccount={actions.deleteAccount}
         onNotify={notify}
       />
     );
