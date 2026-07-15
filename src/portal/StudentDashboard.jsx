@@ -20,6 +20,7 @@ import {
   deleteStudentData,
   downloadCertificatePdf,
   downloadLessonPdf,
+  downloadWelcomeLetter,
   loadStudentDashboard,
   openLessonPdf,
   sendStudentMessage,
@@ -207,6 +208,12 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
   const canAnswer = ["available", "returned"].includes(currentStatus);
   const certificate = data.certificates[0];
   const studentMessages = data.messages ?? [];
+  const welcomeLetterFirstLogin = new Date(
+    data.profile.welcome_letter_first_login_at,
+  ).getTime();
+  const isWelcomeLetterNew =
+    Number.isFinite(welcomeLetterFirstLogin) &&
+    Date.now() < welcomeLetterFirstLogin + 7 * 24 * 60 * 60 * 1000;
 
   async function submitLesson(event) {
     event.preventDefault();
@@ -298,7 +305,22 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
       <main className="portal-content">
         <section className="portal-welcome">
           <div><p>Welcome back</p><h1>{profile.full_name}</h1><span>Continue your Discover Bible Study journey.</span></div>
-          <div className="portal-progress-card"><strong>{progressPercentage}%</strong><span>{completedCount} of 26 lessons completed</span><div><i style={{ width: `${progressPercentage}%` }} /></div></div>
+          <div className="portal-welcome-actions">
+            <button
+              className={
+                isWelcomeLetterNew
+                  ? "portal-welcome-letter is-new"
+                  : "portal-welcome-letter"
+              }
+              type="button"
+              onClick={downloadWelcomeLetter}
+              title="Download your DBS Kaduna welcome letter (PDF)"
+            >
+              <FilePdf aria-hidden="true" size={24} weight="duotone" />
+              <span><strong>Welcome letter</strong><small>{isWelcomeLetterNew ? "New - download within 7 days" : "Download PDF"}</small></span>
+            </button>
+            <div className="portal-progress-card"><strong>{progressPercentage}%</strong><span>{completedCount} of 26 lessons completed</span><div><i style={{ width: `${progressPercentage}%` }} /></div></div>
+          </div>
         </section>
 
         <section className="portal-summary-grid">

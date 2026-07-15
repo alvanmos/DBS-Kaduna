@@ -60,6 +60,23 @@ export async function touchActivity() {
   await supabase.rpc("touch_my_activity");
 }
 
+export function downloadWelcomeLetter() {
+  const anchor = document.createElement("a");
+  anchor.href = "/dbs-kaduna-welcome-letter.pdf";
+  anchor.download = "DBS_Kaduna_Welcome_Letter.pdf";
+  anchor.click();
+}
+
+async function markWelcomeLetterFirstLogin() {
+  const result = await supabase.rpc("student_mark_welcome_letter_first_login");
+  if (result.error && !isMissingSchemaObject(result.error, [
+    "student_mark_welcome_letter_first_login",
+  ])) {
+    throw result.error;
+  }
+  return result.data ?? null;
+}
+
 function fallbackFileName(storagePath, defaultName = "download.pdf") {
   return storagePath?.split("/").pop() || defaultName;
 }
@@ -126,6 +143,10 @@ export async function loadStudentDashboard() {
   const lessons = throwIfError(lessonsResult);
   const questions = throwIfError(questionsResult);
   const registrationForm = throwIfError(formResult);
+  if (!profile.welcome_letter_first_login_at) {
+    const firstLoginAt = await markWelcomeLetterFirstLogin();
+    if (firstLoginAt) profile.welcome_letter_first_login_at = firstLoginAt;
+  }
 
   const [progress, submissions, certificates, messages] = await Promise.all([
     supabase

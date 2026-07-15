@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/register.js": {
+      "includeFiles": "public/dbs-kaduna-welcome-letter.pdf"
+    }
+  },
   "rewrites": [
     {
       "source": "/admin",

@@ -1,4 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+
+const WELCOME_LETTER_FILE = "dbs-kaduna-welcome-letter.pdf";
+const WELCOME_LETTER_ATTACHMENT_NAME = "DBS_Kaduna_Welcome_Letter.pdf";
 
 function send(res, status, body) {
   res.status(status).json(body);
@@ -65,6 +70,44 @@ function validateForm(fields, formData) {
   }
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+async function sendWelcomeLetter({ email, fullName, studentId }) {
+  const pdf = await readFile(
+    join(process.cwd(), "public", WELCOME_LETTER_FILE),
+  );
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+      "Idempotency-Key": `dbs-welcome-letter-${studentId}`,
+    },
+    body: JSON.stringify({
+      from: process.env.WELCOME_LETTER_FROM,
+      to: [email],
+      subject: "Welcome to Discover Bible School, Kaduna",
+      html: `<p>Dear ${escapeHtml(fullName)},</p><p>Welcome to Discover Bible School, Kaduna. Your welcome letter is attached and is also available in your student dashboard.</p><p>We are glad to accompany you on your Bible study journey.</p><p>Discover Bible School, Kaduna Team</p>`,
+      attachments: [
+        {
+          filename: WELCOME_LETTER_ATTACHMENT_NAME,
+          content: pdf.toString("base64"),
+        },
+      ],
+    }),
+  });
+  if (!response.ok) {
+    throw new Error("The welcome letter could not be sent. Please try again.");
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -83,11 +126,20 @@ export default async function handler(req, res) {
   if (!["student", "volunteer_instructor"].includes(recruitmentKind)) {
     return send(res, 400, { error: "Invalid registration type." });
   }
+  if (
+    recruitmentKind === "student" &&
+    (!process.env.RESEND_API_KEY || !process.env.WELCOME_LETTER_FROM)
+  ) {
+    return send(res, 503, {
+      error: "Student welcome email service is not configured yet.",
+    });
+  }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   let createdUserId = null;
+  let createdStudentId = null;
 
   try {
     const { data: form, error: formError } = await supabase
@@ -163,6 +215,7 @@ export default async function handler(req, res) {
         .select("id")
         .single();
       if (studentError) throw studentError;
+      createdStudentId = student.id;
 
       const progressRows = Array.from({ length: 26 }, (_, index) => ({
         student_id: student.id,
@@ -189,10 +242,16 @@ export default async function handler(req, res) {
         });
       if (enrolmentError) throw enrolmentError;
 
+      await sendWelcomeLetter({
+        email,
+        fullName,
+        studentId: student.id,
+      });
+
       return send(res, 201, {
         ok: true,
         message:
-          "Registration successful. You can now sign in with your username and password.",
+          "Registration successful. Your welcome letter has been emailed, and you can now sign in with your username and password.",
       });
     }
 
@@ -256,6 +315,13 @@ export default async function handler(req, res) {
         "Registration received. Your instructor login will work after administrator approval.",
     });
   } catch (error) {
+    if (createdStudentId) {
+      await supabase
+        .from("recruitment_enrolments")
+        .delete()
+        .eq("student_id", createdStudentId);
+      await supabase.from("students").delete().eq("id", createdStudentId);
+    }
     if (createdUserId) {
       await supabase.auth.admin.deleteUser(createdUserId);
     }

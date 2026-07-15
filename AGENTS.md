@@ -46,6 +46,8 @@ When implementing from a selected generated mock, treat that image as the source
 - Student dashboards must show the assigned instructor, all 26 lessons and statuses, online answers, marking feedback, progress, and approved certificate downloads.
 - Instructor dashboards must show only assigned students, support lesson locks, marking and comments, correction returns, completion, and graduation requests.
 - Account emails must use secure invitation/password-setup links; never email plaintext passwords.
+- Send each newly registered student the supplied DBS Kaduna welcome letter as a PDF attachment.
+- Keep the welcome letter downloadable from the student dashboard and blink its PDF download control for seven days from the student's first dashboard login, respecting reduced-motion preferences.
 
 ## Privacy and Communication Direction
 
