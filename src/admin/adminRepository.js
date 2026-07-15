@@ -80,6 +80,16 @@ function dateOnly(value) {
   return value ? value.slice(0, 10) : "";
 }
 
+function currentLessonNumber(progress) {
+  if (progress.length === 0) return 1;
+
+  const nextLesson = progress
+    .filter((item) => item.status !== "completed")
+    .sort((first, second) => first.lesson_number - second.lesson_number)[0];
+
+  return nextLesson?.lesson_number ?? 26;
+}
+
 function throwIfError(result) {
   if (result.error) throw result.error;
   return result.data ?? [];
@@ -303,10 +313,7 @@ export async function loadAdminData() {
     const completedLessons = studentProgress.filter(
       (item) => item.status === "completed",
     ).length;
-    const currentLesson = Math.max(
-      1,
-      ...studentProgress.map((item) => item.lesson_number),
-    );
+    const currentLesson = currentLessonNumber(studentProgress);
     return {
       id: student.id,
       serial: student.serial_number,
