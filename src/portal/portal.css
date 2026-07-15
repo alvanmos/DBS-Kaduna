@@ -362,15 +362,27 @@
 }
 
 .portal-welcome-letter.is-new {
-  border-color: #f6d66c;
+  color: #092d62;
+  background: #ffd77f;
+  border-color: #ffd77f;
   animation: portal-welcome-letter-blink 1.15s steps(2, end) infinite;
 }
 
+.portal-welcome-letter.is-new small {
+  color: #254f7e;
+}
+
 @keyframes portal-welcome-letter-blink {
-  50% {
-    color: #fff8d9;
-    background: rgb(246 214 108 / 28%);
-    box-shadow: 0 0 0 4px rgb(246 214 108 / 24%);
+  0%,
+  49% {
+    background: #ffd77f;
+    box-shadow: 0 0 0 0 rgb(255 215 127 / 35%);
+  }
+
+  50%,
+  100% {
+    background: #f6d66c;
+    box-shadow: 0 0 0 7px rgb(255 215 127 / 28%);
   }
 }
 
