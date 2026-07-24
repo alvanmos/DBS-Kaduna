@@ -1,5 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
+import { Analytics } from "@vercel/analytics/react";
 import { App } from "./App.jsx";
 import { NewsPage } from "./news/NewsPage.jsx";
 import { RegistrationPage } from "./registration/RegistrationPage.jsx";
@@ -56,5 +57,6 @@ createRoot(document.getElementById("root")).render(
     ) : (
       <App />
     )}
+     <Analytics />
   </React.StrictMode>,
 );
