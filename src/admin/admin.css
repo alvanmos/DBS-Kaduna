@@ -1352,6 +1352,20 @@
 .admin-question-controls {
   display: flex;
   gap: 4px;
+  align-items: center;
+}
+
+.admin-question-type-editor select {
+  min-width: 140px;
+  min-height: 31px;
+  padding: 0 25px 0 8px;
+  border: 1px solid #d5dce5;
+  border-radius: 7px;
+  color: var(--admin-navy);
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .admin-question-controls button,
@@ -2019,6 +2033,15 @@
 
   .admin-question-controls {
     grid-column: 2;
+    flex-wrap: wrap;
+  }
+
+  .admin-question-type-editor {
+    flex-basis: 100%;
+  }
+
+  .admin-question-type-editor select {
+    width: 100%;
   }
 
   .admin-toast {

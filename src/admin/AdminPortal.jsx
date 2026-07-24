@@ -19,6 +19,7 @@ import {
   publishNews,
   saveRegistrationForm,
   sendAdminMessageToInstructor,
+  updateQuestionType,
   updateInstructor,
   uploadCertificatePdf,
   uploadLessonPdf,
@@ -212,6 +213,8 @@ export function AdminPortal() {
     uploadLesson: (lessonNumber, file) =>
       runAction(() => uploadLessonPdf(lessonNumber, file)),
     addQuestion: (question) => runAction(() => addQuestion(question)),
+    updateQuestionType: (questionId, type) =>
+      runAction(() => updateQuestionType(questionId, type)),
     moveQuestion: (questionId, direction) =>
       runAction(() => moveQuestion(questionId, direction)),
     deleteQuestion: (questionId) =>
