@@ -2,7 +2,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabasePublishableKey =
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-export const NEWS_ALERT_WINDOW_MS = 12 * 60 * 60 * 1000;
+export const NEWS_ALERT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 export const isPublicNewsConfigured = Boolean(
   supabaseUrl && supabasePublishableKey,
 );

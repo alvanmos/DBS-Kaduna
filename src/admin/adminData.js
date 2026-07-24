@@ -8,5 +8,7 @@ export const adminSections = [
   { id: "questions", label: "Questions" },
   { id: "certificates", label: "Certificates" },
   { id: "reports", label: "Reports" },
+  { id: "recruitment", label: "QR Campaigns" },
+  { id: "forms", label: "Registration Forms" },
   { id: "news", label: "News" },
 ];

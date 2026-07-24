@@ -256,6 +256,23 @@
   border-color: var(--admin-blue);
 }
 
+.admin-danger-button {
+  min-height: 42px;
+  padding: 9px 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #a22f3f;
+  background: #fff1f3;
+  border: 1px solid #efc2c9;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
 .admin-auth-submit {
   min-height: 52px;
   margin-top: 2px;
@@ -665,6 +682,10 @@
   grid-template-columns: 0.82fr 1.18fr;
 }
 
+.admin-two-column--messages {
+  margin-top: 20px;
+}
+
 .admin-panel {
   min-width: 0;
   padding: 20px;
@@ -978,6 +999,53 @@
   gap: 12px;
 }
 
+.admin-message-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-message-list__item {
+  width: 100%;
+  padding: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--admin-ink);
+  background: #f8fafc;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-message-list__item.is-active,
+.admin-message-list__item:hover {
+  background: #f2f7fd;
+  border-color: #8bb3dd;
+}
+
+.admin-message-list__item span {
+  min-width: 0;
+}
+
+.admin-message-list__item strong,
+.admin-message-list__item small {
+  display: block;
+}
+
+.admin-message-list__item strong {
+  color: var(--admin-navy);
+  font-size: 0.84rem;
+}
+
+.admin-message-list__item small {
+  margin-top: 4px;
+  color: var(--admin-muted);
+  font-size: 0.7rem;
+}
+
 .admin-instructor-card {
   padding: 17px;
   display: flex;
@@ -1057,6 +1125,55 @@
   padding: 8px 10px;
   border: 1px solid #ccd6e1;
   border-radius: 8px;
+}
+
+.admin-message-thread {
+  max-height: 360px;
+  margin-bottom: 16px;
+  display: grid;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.admin-message-card {
+  max-width: 88%;
+  padding: 13px;
+  color: #43516b;
+  background: #f8fafc;
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+}
+
+.admin-message-card--own {
+  margin-left: auto;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--admin-blue), var(--admin-navy));
+  border-color: transparent;
+}
+
+.admin-message-card strong,
+.admin-message-card small {
+  display: block;
+}
+
+.admin-message-card strong {
+  font-size: 0.72rem;
+}
+
+.admin-message-card p {
+  margin: 7px 0;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.admin-message-card small {
+  font-size: 0.67rem;
+  opacity: 0.8;
+}
+
+.admin-message-form {
+  display: grid;
+  gap: 12px;
 }
 
 .admin-policy-note {
@@ -1144,7 +1261,8 @@
 .admin-form-grid select,
 .admin-form-grid textarea,
 .admin-certificate-generator select,
-.admin-verification-field input {
+.admin-verification-field input,
+.admin-campaign-link input {
   width: 100%;
   min-height: 43px;
   padding: 9px 11px;
@@ -1165,7 +1283,8 @@
 .admin-form-grid select:focus,
 .admin-form-grid textarea:focus,
 .admin-certificate-generator select:focus,
-.admin-verification-field input:focus {
+.admin-verification-field input:focus,
+.admin-campaign-link input:focus {
   border-color: var(--admin-blue);
   box-shadow: 0 0 0 4px rgb(12 77 162 / 10%);
 }
@@ -1173,6 +1292,13 @@
 .admin-file-field input {
   padding: 8px;
   font-size: 0.75rem;
+}
+
+.admin-maintenance-note {
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: 0.72rem;
+  line-height: 1.5;
 }
 
 .admin-question-list {
@@ -1391,6 +1517,244 @@
   font-weight: 750;
 }
 
+.admin-recruitment-grid {
+  margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr);
+  gap: 20px;
+}
+
+.admin-campaign-list {
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid var(--admin-line);
+}
+
+.admin-campaign-list > button {
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--admin-ink);
+  background: #f8fafc;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-campaign-list > button:hover,
+.admin-campaign-list > button.is-active {
+  background: #f2f7fd;
+  border-color: #8bb3dd;
+}
+
+.admin-campaign-list > button span:first-child {
+  min-width: 0;
+}
+
+.admin-campaign-list > button strong,
+.admin-campaign-list > button small {
+  display: block;
+}
+
+.admin-campaign-list > button strong {
+  overflow: hidden;
+  color: var(--admin-navy);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-campaign-list > button small {
+  margin-top: 4px;
+  color: var(--admin-muted);
+  font-size: 0.67rem;
+}
+
+.admin-qr-preview {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-qr-card {
+  width: min(100%, 360px);
+  margin: 0 auto 18px;
+  padding: 18px;
+  display: grid;
+  justify-items: center;
+  background: #f8fafc;
+  border: 1px solid var(--admin-line);
+  border-radius: 14px;
+  text-align: center;
+}
+
+.admin-qr-card img,
+.admin-qr-loading {
+  width: min(100%, 260px);
+  aspect-ratio: 1;
+}
+
+.admin-qr-card img {
+  padding: 8px;
+  background: #ffffff;
+  border-radius: 9px;
+}
+
+.admin-qr-loading {
+  display: grid;
+  place-items: center;
+  color: var(--admin-muted);
+  background: #ffffff;
+  border: 1px dashed #cbd4df;
+  border-radius: 9px;
+  font-size: 0.75rem;
+}
+
+.admin-qr-card strong {
+  margin-top: 14px;
+  color: var(--admin-navy);
+  font-size: 0.9rem;
+}
+
+.admin-qr-card > span {
+  margin-top: 4px;
+  color: var(--admin-green);
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.admin-campaign-link {
+  color: var(--admin-ink);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.admin-campaign-link input {
+  margin-top: 7px;
+  font-size: 0.72rem;
+}
+
+.admin-qr-actions {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-recruitment-enrolments {
+  margin-bottom: 20px;
+}
+
+.admin-form-tabs {
+  margin-bottom: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.admin-form-tabs button {
+  min-height: 44px;
+  padding: 9px 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--admin-muted);
+  background: #ffffff;
+  border: 1px solid var(--admin-line);
+  border-radius: 9px;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.admin-form-tabs button.is-active {
+  color: #ffffff;
+  background: var(--admin-blue);
+  border-color: var(--admin-blue);
+}
+
+.admin-form-builder {
+  display: grid;
+  gap: 20px;
+}
+
+.admin-publish-toggle,
+.admin-field-required {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--admin-ink);
+  font-size: 0.74rem;
+  font-weight: 750;
+}
+
+.admin-publish-toggle input,
+.admin-field-required input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--admin-green);
+}
+
+.admin-field-builder-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-field-builder-list article {
+  padding: 13px;
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) minmax(130px, 0.8fr) minmax(190px, 1fr) auto auto;
+  align-items: end;
+  gap: 11px;
+  background: #f8fafc;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+}
+
+.admin-field-builder-list label {
+  color: var(--admin-ink);
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.admin-field-builder-list input:not([type="checkbox"]),
+.admin-field-builder-list select {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  color: var(--admin-ink);
+  background: #ffffff;
+  border: 1px solid #ccd6e1;
+  border-radius: 8px;
+  font: inherit;
+}
+
+.admin-icon-danger {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  color: #a22f3f;
+  background: #fff1f3;
+  border: 1px solid #efc2c9;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.admin-icon-danger:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.admin-form-save {
+  justify-self: end;
+}
+
 .admin-news-list {
   display: grid;
   gap: 10px;
@@ -1519,7 +1883,8 @@
   }
 
   .admin-two-column,
-  .admin-two-column--student {
+  .admin-two-column--student,
+  .admin-recruitment-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1621,6 +1986,18 @@
   .admin-form-grid,
   .admin-location-list {
     grid-template-columns: 1fr;
+  }
+
+  .admin-qr-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-field-builder-list article {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-form-tabs {
+    flex-direction: column;
   }
 
   .admin-instructor-card {

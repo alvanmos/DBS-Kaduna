@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.jsx";
 import { NewsPage } from "./news/NewsPage.jsx";
+import { RegistrationPage } from "./registration/RegistrationPage.jsx";
 import "./styles.css";
 
 const isNewsRoute =
@@ -10,13 +11,32 @@ const isNewsRoute =
 const isAdminRoute =
   window.location.pathname === "/admin" ||
   window.location.pathname.startsWith("/admin/") ||
-  window.location.pathname === "/login/admin" ||
-  window.location.hash.includes("access_token=") ||
-  window.location.search.includes("type=invite") ||
-  window.location.search.includes("type=recovery");
+  window.location.pathname === "/login/admin";
+const learningRole =
+  window.location.pathname === "/student" ||
+  window.location.pathname.startsWith("/student/") ||
+  window.location.pathname === "/login/student"
+    ? "student"
+    : window.location.pathname === "/instructor" ||
+        window.location.pathname.startsWith("/instructor/") ||
+        window.location.pathname === "/login/instructor"
+      ? "instructor"
+      : null;
+const registrationRole = window.location.pathname.startsWith(
+  "/register/volunteer-instructor",
+)
+  ? "volunteer-instructor"
+  : window.location.pathname.startsWith("/register/student")
+    ? "student"
+    : null;
 const AdminPortal = React.lazy(() =>
   import("./admin/AdminPortal.jsx").then((module) => ({
     default: module.AdminPortal,
+  })),
+);
+const LearningPortal = React.lazy(() =>
+  import("./portal/LearningPortal.jsx").then((module) => ({
+    default: module.LearningPortal,
   })),
 );
 createRoot(document.getElementById("root")).render(
@@ -25,6 +45,12 @@ createRoot(document.getElementById("root")).render(
       <React.Suspense fallback={null}>
         <AdminPortal />
       </React.Suspense>
+    ) : learningRole ? (
+      <React.Suspense fallback={null}>
+        <LearningPortal role={learningRole} />
+      </React.Suspense>
+    ) : registrationRole ? (
+      <RegistrationPage role={registrationRole} />
     ) : isNewsRoute ? (
       <NewsPage />
     ) : (

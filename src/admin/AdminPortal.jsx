@@ -6,6 +6,10 @@ import {
   addQuestion,
   approveInstructor,
   assignStudentInstructor,
+  clearRegistrationData,
+  createRecruitmentCampaign,
+  deleteAccountAsAdmin,
+  deleteRecruitmentCampaign,
   deleteNews,
   deleteQuestion,
   getEmptyAdminData,
@@ -13,8 +17,11 @@ import {
   loadAdminData,
   moveQuestion,
   publishNews,
+  saveRegistrationForm,
+  sendAdminMessageToInstructor,
   updateQuestionType,
   updateInstructor,
+  uploadCertificatePdf,
   uploadLessonPdf,
 } from "./adminRepository.js";
 import {
@@ -198,10 +205,11 @@ export function AdminPortal() {
   const actions = {
     assignStudent: (studentId, instructorId) =>
       runAction(() => assignStudentInstructor(studentId, instructorId)),
-    approveInstructor: (applicationId, maxLoad) =>
-      runAction(() => approveInstructor(applicationId, maxLoad)),
+    approveInstructor: (instructor, maxLoad) =>
+      runAction(() => approveInstructor(instructor, maxLoad)),
     updateInstructor: (instructorId, changes) =>
       runAction(() => updateInstructor(instructorId, changes)),
+    deleteAccount: (target) => runAction(() => deleteAccountAsAdmin(target)),
     uploadLesson: (lessonNumber, file) =>
       runAction(() => uploadLessonPdf(lessonNumber, file)),
     addQuestion: (question) => runAction(() => addQuestion(question)),
@@ -213,8 +221,19 @@ export function AdminPortal() {
       runAction(() => deleteQuestion(questionId)),
     issueCertificate: (studentId) =>
       runAction(() => issueCertificate(studentId)),
+    uploadCertificatePdf: (studentId, file) =>
+      runAction(() => uploadCertificatePdf(studentId, file)),
+    createRecruitmentCampaign: (campaign) =>
+      runAction(() => createRecruitmentCampaign(campaign)),
+    deleteRecruitmentCampaign: (campaignId) =>
+      runAction(() => deleteRecruitmentCampaign(campaignId)),
+    saveRegistrationForm: (form) =>
+      runAction(() => saveRegistrationForm(form)),
+    sendAdminMessage: (instructorId, body) =>
+      runAction(() => sendAdminMessageToInstructor(instructorId, body)),
     publishNews: (newsItem) => runAction(() => publishNews(newsItem)),
     deleteNews: (newsItem) => runAction(() => deleteNews(newsItem)),
+    clearRegistrationData: () => runAction(() => clearRegistrationData()),
   };
 
   if (status === "loading") {
@@ -243,6 +262,7 @@ export function AdminPortal() {
 
   return (
     <AdminDashboard
+      adminProfileId={profile?.id ?? ""}
       adminEmail={profile?.email ?? session?.user?.email ?? ADMIN_EMAIL}
       data={data}
       actions={actions}
