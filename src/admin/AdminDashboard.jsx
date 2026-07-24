@@ -11,6 +11,7 @@ import {
   Clock,
   DownloadSimple,
   FilePdf,
+  FloppyDisk,
   Gauge,
   GraduationCap,
   List,
@@ -758,6 +759,7 @@ function QuestionManagement({
   questions,
   instructors,
   onAddQuestion,
+  onUpdateQuestionType,
   onMoveQuestion,
   onDeleteQuestion,
   onNotify,
@@ -766,6 +768,7 @@ function QuestionManagement({
   const [type, setType] = useState("Multiple choice");
   const [marker, setMarker] = useState("");
   const [prompt, setPrompt] = useState("");
+  const [editedTypes, setEditedTypes] = useState({});
 
   const lessonQuestions = questions
     .filter((question) => question.lesson === Number(lesson))
@@ -797,6 +800,23 @@ function QuestionManagement({
     if (targetIndex < 0 || targetIndex >= lessonQuestions.length) return;
     try {
       await onMoveQuestion(questionId, direction);
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    }
+  }
+
+  async function saveQuestionType(question) {
+    const nextType = editedTypes[question.id] ?? question.type;
+    if (nextType === question.type) return;
+
+    try {
+      await onUpdateQuestionType(question.id, nextType);
+      setEditedTypes((current) => {
+        const next = { ...current };
+        delete next[question.id];
+        return next;
+      });
+      onNotify("Question type updated.");
     } catch (error) {
       onNotify(readableError(error), "error");
     }
@@ -902,6 +922,32 @@ function QuestionManagement({
                     </small>
                   </div>
                   <div className="admin-question-controls">
+                    <label className="admin-question-type-editor">
+                      <span className="sr-only">Question {index + 1} type</span>
+                      <select
+                        value={editedTypes[question.id] ?? question.type}
+                        onChange={(event) =>
+                          setEditedTypes((current) => ({
+                            ...current,
+                            [question.id]: event.target.value,
+                          }))
+                        }
+                      >
+                        <option>Multiple choice</option>
+                        <option>True or false</option>
+                        <option>Short answer</option>
+                        <option>Essay</option>
+                      </select>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => saveQuestionType(question)}
+                      disabled={(editedTypes[question.id] ?? question.type) === question.type}
+                      aria-label={`Save type for question ${index + 1}`}
+                      title="Save question type"
+                    >
+                      <FloppyDisk aria-hidden="true" size={17} />
+                    </button>
                     <button
                       type="button"
                       onClick={() => moveQuestion(question.id, -1)}
@@ -1451,6 +1497,7 @@ export function AdminDashboard({
         questions={data.questions}
         instructors={data.instructors}
         onAddQuestion={actions.addQuestion}
+        onUpdateQuestionType={actions.updateQuestionType}
         onMoveQuestion={actions.moveQuestion}
         onDeleteQuestion={actions.deleteQuestion}
         onNotify={notify}

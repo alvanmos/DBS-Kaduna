@@ -294,6 +294,17 @@ export async function addQuestion({
   );
 }
 
+export async function updateQuestionType(questionId, type) {
+  const kind = questionTypeValues[type];
+  if (!kind) {
+    throw new Error("Choose a valid question type.");
+  }
+
+  throwIfError(
+    await supabase.from("questions").update({ kind }).eq("id", questionId),
+  );
+}
+
 export async function moveQuestion(questionId, direction) {
   throwIfError(
     await supabase.rpc("admin_move_question", {
