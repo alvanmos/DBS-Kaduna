@@ -27,6 +27,8 @@ import {
   submitStudentLesson,
   updateStudentData,
 } from "./portalRepository.js";
+import { CommunicationHub } from "../communication/CommunicationHub.jsx";
+import "../communication/communication.css";
 
 function lessonStatus(progress, lessonNumber) {
   const item = progress.find((entry) => entry.lesson_number === lessonNumber);
@@ -336,6 +338,8 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
             <div className="portal-contact-list"><span><EnvelopeSimple size={18} />{data.instructor.email}</span><span><Phone size={18} />{data.instructor.phone || "Phone not provided"}</span></div>
           ) : <p className="portal-muted">The administrator will assign an instructor shortly.</p>}
         </section>
+
+        <CommunicationHub role="student" />
 
         <div className="portal-support-layout">
           <section className="portal-panel">
