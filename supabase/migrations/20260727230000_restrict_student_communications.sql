@@ -47,4 +47,38 @@ returns boolean language sql stable security definer set search_path = '' as $$
   );
 $$;
 
+-- Calls that were created before this access rule must not remain actionable.
+update public.calls call_record
+set
+  status = 'cancelled',
+  ended_at = coalesce(call_record.ended_at, now()),
+  updated_at = now()
+where call_record.status in ('calling', 'ringing', 'accepted')
+  and (
+    (
+      exists (
+        select 1 from public.profiles caller_profile
+        where caller_profile.id = call_record.caller_id
+          and caller_profile.role = 'student'
+      )
+      and exists (
+        select 1 from public.profiles recipient_profile
+        where recipient_profile.id = call_record.recipient_id
+          and recipient_profile.role = 'admin'
+      )
+    )
+    or (
+      exists (
+        select 1 from public.profiles caller_profile
+        where caller_profile.id = call_record.caller_id
+          and caller_profile.role = 'admin'
+      )
+      and exists (
+        select 1 from public.profiles recipient_profile
+        where recipient_profile.id = call_record.recipient_id
+          and recipient_profile.role = 'student'
+      )
+    )
+  );
+
 commit;
