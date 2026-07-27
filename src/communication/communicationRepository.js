@@ -20,7 +20,7 @@ async function rpc(name, params = {}) {
   }
 }
 
-export async function loadCommunicationHub() {
+export async function loadCommunicationHub(role) {
   const [contacts, calls, meetings, messages, settings] = await Promise.all([
     rpc("communication_my_contacts"),
     rpc("communication_my_calls"),
@@ -28,7 +28,10 @@ export async function loadCommunicationHub() {
     rpc("communication_my_recorded_messages"),
     rpc("communication_my_settings"),
   ]);
-  return { contacts: contacts ?? [], calls: calls ?? [], meetings: meetings ?? [], messages: messages ?? [], settings: settings ?? {} };
+  const visibleContacts = (contacts ?? []).filter(
+    (contact) => role !== "student" || contact.contact_role === "instructor",
+  );
+  return { contacts: visibleContacts, calls: calls ?? [], meetings: meetings ?? [], messages: messages ?? [], settings: settings ?? {} };
 }
 
 export async function startCommunicationCall({ recipientId, callType }) {
