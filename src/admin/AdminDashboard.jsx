@@ -22,6 +22,7 @@ import {
   Megaphone,
   Newspaper,
   PaperPlaneTilt,
+  Phone,
   Plus,
   Question,
   QrCode,
@@ -36,6 +37,8 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { adminSections } from "./adminData.js";
+import { CommunicationHub } from "../communication/CommunicationHub.jsx";
+import "../communication/communication.css";
 
 const sectionIcons = {
   dashboard: Gauge,
@@ -48,6 +51,7 @@ const sectionIcons = {
   news: Newspaper,
   recruitment: QrCode,
   forms: ClipboardText,
+  communication: Phone,
 };
 
 function countWhere(items, predicate) {
@@ -2451,6 +2455,8 @@ export function AdminDashboard({
         onNotify={notify}
       />
     );
+  } else if (activeSection === "communication") {
+    content = <CommunicationHub role="admin" />;
   } else {
     content = (
       <DashboardSummary

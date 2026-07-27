@@ -21,6 +21,8 @@ import {
   setLessonLock,
   setLessonResult,
 } from "./portalRepository.js";
+import { CommunicationHub } from "../communication/CommunicationHub.jsx";
+import "../communication/communication.css";
 
 function progressFor(progress, studentId, lessonNumber) {
   return progress.find(
@@ -227,6 +229,8 @@ export function InstructorDashboard({ profile, onSignOut }) {
           <article><span><BookOpenText size={24} /></span><strong>26</strong><small>Course lessons</small></article>
           <article><span><CheckCircle size={24} /></span><strong>{pendingCount}</strong><small>Waiting for marking</small></article>
         </section>
+
+        <CommunicationHub role="instructor" />
 
         <div className="portal-teacher-layout">
           <aside className="portal-panel portal-student-list">
