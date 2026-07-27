@@ -1,9 +1,8 @@
 begin;
 
 -- Students may communicate only with their active, assigned instructor.
--- Administration remains connected to volunteer instructors, as required by
--- the instructor administration workflow; neither side may contact students
--- through this communication hub.
+-- Administration remains connected to volunteer instructors; neither side may
+-- contact students through this communication hub.
 create or replace function public.communication_can_contact(actor_id uuid, target_id uuid)
 returns boolean language sql stable security definer set search_path = '' as $$
   select actor_id is not null and target_id is not null and actor_id <> target_id and (
