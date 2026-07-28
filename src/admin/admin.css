@@ -16,6 +16,19 @@
   --admin-shadow: 0 18px 40px rgb(7 28 69 / 8%);
 }
 
+/* Every enabled dashboard control, including its icon, should look clickable. */
+.admin-shell button:not(:disabled),
+.admin-auth-shell button:not(:disabled),
+.admin-shell [role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+.admin-shell button:not(:disabled) svg,
+.admin-auth-shell button:not(:disabled) svg,
+.admin-shell [role="button"]:not([aria-disabled="true"]) svg {
+  cursor: inherit;
+}
+
 .admin-auth-shell,
 .admin-shell {
   min-height: 100vh;
@@ -404,6 +417,11 @@
   text-align: left;
   text-decoration: none;
   cursor: pointer;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
 .admin-sidebar nav button:hover,
@@ -415,7 +433,22 @@
 }
 
 .admin-sidebar nav button.is-active {
-  box-shadow: inset 3px 0 0 #48c980;
+  color: #ffffff;
+  background: linear-gradient(90deg, rgb(72 201 128 / 28%), rgb(255 255 255 / 12%));
+  box-shadow:
+    inset 5px 0 0 #61d394,
+    0 7px 17px rgb(0 0 0 / 16%);
+  transform: translateX(3px);
+}
+
+.admin-sidebar nav button.is-active svg {
+  color: #79e4a7;
+}
+
+.admin-sidebar nav button:active,
+.admin-sidebar-footer button:active,
+.admin-sidebar-footer a:active {
+  transform: translateX(1px) scale(0.985);
 }
 
 .admin-sidebar nav button small {

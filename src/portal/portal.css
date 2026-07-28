@@ -8,6 +8,27 @@
   --portal-bg: #f5f7fa;
 }
 
+/* Keep a hand cursor on every enabled dashboard action, including icon-only controls. */
+.portal-shell button:not(:disabled),
+.portal-auth-shell button:not(:disabled),
+.portal-error button:not(:disabled),
+.portal-shell [role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+.portal-shell button:not(:disabled) svg,
+.portal-auth-shell button:not(:disabled) svg,
+.portal-error button:not(:disabled) svg,
+.portal-shell [role="button"]:not([aria-disabled="true"]) svg {
+  cursor: inherit;
+}
+
+.portal-shell button:not(:disabled):active,
+.portal-auth-shell button:not(:disabled):active,
+.portal-error button:not(:disabled):active {
+  transform: scale(0.98);
+}
+
 .portal-loading,
 .portal-error,
 .portal-auth-shell {
@@ -557,12 +578,29 @@
   border-radius: 9px;
   text-align: left;
   cursor: pointer;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
 .portal-lesson-list button.is-active,
 .portal-student-list > button.is-active {
-  background: #edf5fd;
-  border-color: #8bb3dd;
+  color: var(--portal-navy);
+  background: linear-gradient(90deg, #dceeff, #f7fbff);
+  border-color: #4d91d1;
+  box-shadow:
+    inset 4px 0 0 var(--portal-blue),
+    0 6px 15px rgb(12 77 162 / 13%);
+  transform: translateX(3px);
+}
+
+.portal-lesson-list button.is-active > span,
+.portal-student-list > button.is-active i {
+  color: #ffffff;
+  background: var(--portal-blue);
 }
 
 .portal-lesson-list button > span {
@@ -910,11 +948,27 @@
   border: 1px solid #e3e8ee;
   border-radius: 8px;
   text-align: left;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
 .portal-teacher-lessons button.is-active {
-  background: #edf5fd;
-  border-color: #8bb3dd;
+  color: var(--portal-navy);
+  background: linear-gradient(135deg, #dceeff, #f7fbff);
+  border-color: #4d91d1;
+  box-shadow:
+    inset 3px 0 0 var(--portal-blue),
+    0 5px 12px rgb(12 77 162 / 12%);
+  transform: translateY(-2px);
+}
+
+.portal-teacher-lessons button.is-active span {
+  color: var(--portal-navy);
 }
 
 .portal-teacher-lessons span {
