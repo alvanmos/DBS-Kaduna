@@ -23,3 +23,6 @@
 @keyframes communication-pulse { 50% { opacity: .35; transform: scale(.75); } }
 @media (max-width: 720px) { .communication-head, .communication-incoming, .communication-outgoing { align-items: flex-start; flex-direction: column; }.communication-incoming button, .communication-outgoing button { width: 100%; }.communication-contact-grid, .communication-columns { grid-template-columns: 1fr; }.communication-scheduler > div { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .communication-recorder *, .communication-hub * { animation: none !important; transition: none !important; } }
+
+.communication-scheduler__date-time { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+@media (max-width: 720px) { .communication-scheduler__date-time { grid-template-columns: 1fr !important; } }
