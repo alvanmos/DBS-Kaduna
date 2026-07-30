@@ -210,13 +210,6 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
   const canAnswer = ["available", "returned"].includes(currentStatus);
   const certificate = data.certificates[0];
   const studentMessages = data.messages ?? [];
-  const welcomeLetterFirstLogin = new Date(
-    data.profile.welcome_letter_first_login_at,
-  ).getTime();
-  const isWelcomeLetterNew =
-    Number.isFinite(welcomeLetterFirstLogin) &&
-    Date.now() < welcomeLetterFirstLogin + 7 * 24 * 60 * 60 * 1000;
-
   async function submitLesson(event) {
     event.preventDefault();
     setLessonMessage("");
@@ -309,18 +302,13 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
           <div><p>Welcome back</p><h1>{profile.full_name}</h1><span>Continue your Discover Bible Study journey.</span></div>
           <div className="portal-welcome-actions">
             <button
-              className={
-                isWelcomeLetterNew
-                  ? "portal-welcome-letter is-new"
-                  : "portal-welcome-letter"
-              }
+              className="portal-welcome-letter is-prompt"
               type="button"
               onClick={downloadWelcomeLetter}
               title="Download your DBS Kaduna welcome letter (PDF)"
             >
               <FilePdf aria-hidden="true" size={24} weight="duotone" />
               <span><strong>Welcome letter</strong><small>Download PDF</small></span>
-              {isWelcomeLetterNew ? <span className="portal-welcome-letter__badge">New</span> : null}
             </button>
             <div className="portal-progress-card"><strong>{progressPercentage}%</strong><span>{completedCount} of 26 lessons completed</span><div><i style={{ width: `${progressPercentage}%` }} /></div></div>
           </div>
