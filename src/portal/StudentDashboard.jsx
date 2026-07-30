@@ -474,8 +474,8 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
             <div className="portal-panel-heading">
               <div><p>Lesson {selectedLesson}</p><h2>{currentLesson?.title}</h2><span className={`portal-status portal-status--${currentStatus}`}>{statusLabel(currentStatus)}</span></div>
               <div className="portal-lesson-actions">
-                <button className="portal-secondary-button" type="button" disabled={!currentLesson?.storage_path || currentStatus === "locked"} onClick={() => openLessonPdf(currentLesson?.storage_path).catch((error) => setLessonMessage(error.message))}><FilePdf size={19} />Open lesson PDF</button>
-                <button className="portal-secondary-button" type="button" disabled={!currentLesson?.storage_path || currentStatus === "locked"} onClick={() => downloadLessonPdf(currentLesson?.storage_path, currentLesson?.original_file_name).catch((error) => setLessonMessage(error.message))}><DownloadSimple size={19} />Download lesson</button>
+                <button className="portal-secondary-button portal-lesson-prompt" type="button" disabled={!currentLesson?.storage_path || currentStatus === "locked"} onClick={() => openLessonPdf(currentLesson?.storage_path).catch((error) => setLessonMessage(error.message))}><FilePdf size={19} />Open Lesson PDF</button>
+                <button className="portal-secondary-button portal-lesson-prompt" type="button" disabled={!currentLesson?.storage_path || currentStatus === "locked"} onClick={() => downloadLessonPdf(currentLesson?.storage_path, currentLesson?.original_file_name).catch((error) => setLessonMessage(error.message))}><DownloadSimple size={19} />Download Lesson</button>
               </div>
             </div>
 

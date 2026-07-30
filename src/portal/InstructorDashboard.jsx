@@ -263,7 +263,7 @@ export function InstructorDashboard({ profile, onSignOut }) {
                 <div className="portal-lesson-review-heading">
                   <div><p>Lesson {selectedLesson}</p><h3>{currentLesson?.title}</h3></div>
                   <div>
-                    <button className="portal-secondary-button" type="button" disabled={!currentLesson?.storage_path} onClick={() => openLessonPdf(currentLesson?.storage_path).catch((error) => setMessage(error.message))}><FilePdf size={18} />Lesson PDF</button>
+                    <button className="portal-secondary-button portal-lesson-prompt" type="button" disabled={!currentLesson?.storage_path} onClick={() => openLessonPdf(currentLesson?.storage_path).catch((error) => setMessage(error.message))}><FilePdf size={18} />Lesson PDF</button>
                     <button className="portal-secondary-button" type="button" onClick={toggleLock}>{currentProgress?.is_locked ? "Unlock lesson" : "Lock lesson"}</button>
                   </div>
                 </div>
