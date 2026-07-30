@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  ArrowDown,
   BookOpenText,
   Certificate,
   CheckCircle,
@@ -8,6 +9,7 @@ import {
   FilePdf,
   GraduationCap,
   LockKey,
+  List,
   PaperPlaneTilt,
   PencilSimpleLine,
   Phone,
@@ -89,6 +91,13 @@ function buildStudentFormState(dashboard) {
   );
 }
 
+const studentSections = [
+  { id: "overview", label: "Overview", icon: GraduationCap },
+  { id: "lessons", label: "My lessons", icon: BookOpenText },
+  { id: "messages", label: "Messages", icon: PaperPlaneTilt },
+  { id: "details", label: "My details", icon: PencilSimpleLine },
+];
+
 function StudentDetailField({ field, value, onChange }) {
   if (field.type === "checkbox") {
     return (
@@ -148,6 +157,8 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [activeSection, setActiveSection] = useState("overview");
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   async function refresh() {
     try {
@@ -289,15 +300,42 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
     }
   }
 
+  const activeSectionLabel = studentSections.find((section) => section.id === activeSection)?.label ?? "Overview";
+
+  function selectSection(sectionId) {
+    setActiveSection(sectionId);
+    setIsMobileNavOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   return (
     <div className="portal-shell">
-      <header className="portal-topbar">
-        <a href="/" className="portal-brand"><img src="/dbs-kaduna-logo.png?v=20260614" alt="DBS Kaduna" /><span><strong>DBS Kaduna</strong><small>Student Dashboard</small></span></a>
-        <div className="portal-account"><UserCircle size={25} /><span><strong>{profile.full_name}</strong><small>{profile.email}</small></span></div>
-        <button type="button" onClick={onSignOut}><SignOut size={19} />Sign out</button>
-      </header>
+      <aside className={isMobileNavOpen ? "portal-dashboard-sidebar portal-dashboard-sidebar--open" : "portal-dashboard-sidebar"}>
+        <a href="/" className="portal-sidebar-brand"><img src="/dbs-kaduna-logo.png?v=20260614" alt="DBS Kaduna" /><span><strong>DBS Kaduna</strong><small>Student portal</small></span></a>
+        <nav aria-label="Student dashboard sections">
+          {studentSections.map((section) => {
+            const Icon = section.icon;
+            return <button className={activeSection === section.id ? "is-active" : ""} type="button" key={section.id} onClick={() => selectSection(section.id)}><Icon aria-hidden="true" size={21} weight="duotone" /><span>{section.label}</span></button>;
+          })}
+        </nav>
+        <div className="portal-sidebar-footer">
+          <a href="/"><ArrowDown aria-hidden="true" size={18} />Public homepage</a>
+          <button type="button" onClick={onSignOut}><SignOut aria-hidden="true" size={19} />Sign out</button>
+        </div>
+      </aside>
+
+      {isMobileNavOpen && <button className="portal-sidebar-backdrop" type="button" onClick={() => setIsMobileNavOpen(false)} aria-label="Close navigation" />}
+
+      <div className="portal-workspace">
+        <header className="portal-workspace-header">
+          <button className="portal-mobile-menu" type="button" onClick={() => setIsMobileNavOpen(true)} aria-label="Open student navigation"><List aria-hidden="true" size={24} /></button>
+          <div><p>Discover Bible School, Kaduna</p><h1>{activeSectionLabel}</h1></div>
+          <div className="portal-account"><span><UserCircle aria-hidden="true" size={24} weight="duotone" /></span><div><strong>{profile.full_name}</strong><small>{profile.email}</small></div></div>
+          <button className="portal-workspace-signout" type="button" onClick={onSignOut}><SignOut aria-hidden="true" size={19} /><span>Sign out</span></button>
+        </header>
 
       <main className="portal-content">
+        {activeSection === "overview" && <>
         <section className="portal-welcome">
           <div><p>Welcome back</p><h1>{profile.full_name}</h1><span>Continue your Discover Bible Study journey.</span></div>
           <div className="portal-welcome-actions">
@@ -327,10 +365,19 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
           ) : <p className="portal-muted">The administrator will assign an instructor shortly.</p>}
         </section>
 
-        <CommunicationHub role="student" />
+        {certificate && (
+          <section className="portal-panel portal-certificate-access">
+            <Certificate size={40} weight="duotone" />
+            <div><p>Certificate approved</p><h2>Your completion certificate is ready</h2><span>{certificate.storage_path ? `Verification code: ${certificate.verification_code}` : "Your certificate PDF will appear here after the administrator uploads it."}</span></div>
+            <button className="portal-primary-button" type="button" disabled={!certificate.storage_path} onClick={() => downloadCertificatePdf(certificate.storage_path, certificate.original_file_name).catch((error) => setLessonMessage(error.message))}><DownloadSimple size={19} />Download certificate PDF</button>
+          </section>
+        )}
+        </>}
 
-        <div className="portal-support-layout">
-          <section className="portal-panel">
+        {activeSection === "messages" && <CommunicationHub role="student" />}
+
+        {(activeSection === "details" || activeSection === "messages") && <div className="portal-support-layout">
+          {activeSection === "details" && <section className="portal-panel">
             <div className="portal-panel-heading">
               <div>
                 <p>Privacy & data controls</p>
@@ -370,9 +417,9 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
                 </button>
               </div>
             </form>
-          </section>
+          </section>}
 
-          <section className="portal-panel">
+          {activeSection === "messages" && <section className="portal-panel">
             <div className="portal-panel-heading">
               <div>
                 <p>Support conversation</p>
@@ -439,10 +486,10 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
             ) : (
               <div className="portal-empty">Your instructor conversation will appear here once you are assigned.</div>
             )}
-          </section>
-        </div>
+          </section>}
+        </div>}
 
-        <div className="portal-learning-layout">
+        {activeSection === "lessons" && <div className="portal-learning-layout">
           <aside className="portal-panel portal-lesson-nav">
             <div className="portal-panel-heading"><div><p>Course library</p><h2>26 Lessons</h2></div></div>
             <div className="portal-lesson-list">
@@ -489,16 +536,9 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
               </form>
             )}
           </section>
-        </div>
-
-        {certificate && (
-          <section className="portal-panel portal-certificate-access">
-            <Certificate size={40} weight="duotone" />
-            <div><p>Certificate approved</p><h2>Your completion certificate is ready</h2><span>{certificate.storage_path ? `Verification code: ${certificate.verification_code}` : "Your certificate PDF will appear here after the administrator uploads it."}</span></div>
-            <button className="portal-primary-button" type="button" disabled={!certificate.storage_path} onClick={() => downloadCertificatePdf(certificate.storage_path, certificate.original_file_name).catch((error) => setLessonMessage(error.message))}><DownloadSimple size={19} />Download certificate PDF</button>
-          </section>
-        )}
+        </div>}
       </main>
+      </div>
     </div>
   );
 }
