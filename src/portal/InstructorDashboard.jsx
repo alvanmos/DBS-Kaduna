@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  ArrowDown,
   BookOpenText,
   CheckCircle,
   FilePdf,
   GraduationCap,
   LockKey,
+  List,
   PaperPlaneTilt,
   SignOut,
   Student,
@@ -42,6 +44,12 @@ function formatMessageTime(value) {
   }).format(new Date(value));
 }
 
+const instructorSections = [
+  { id: "overview", label: "Overview", icon: GraduationCap },
+  { id: "reviews", label: "Student reviews", icon: Student },
+  { id: "messages", label: "Messages", icon: PaperPlaneTilt },
+];
+
 export function InstructorDashboard({ profile, onSignOut }) {
   const [data, setData] = useState(null);
   const [selectedStudentId, setSelectedStudentId] = useState("");
@@ -55,6 +63,8 @@ export function InstructorDashboard({ profile, onSignOut }) {
   const [adminConversationNotice, setAdminConversationNotice] = useState(null);
   const [isSendingStudentMessage, setIsSendingStudentMessage] = useState(false);
   const [isSendingAdminMessage, setIsSendingAdminMessage] = useState(false);
+  const [activeSection, setActiveSection] = useState("overview");
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   async function refresh() {
     try {
@@ -210,15 +220,43 @@ export function InstructorDashboard({ profile, onSignOut }) {
     }
   }
 
+  const activeSectionLabel = instructorSections.find((section) => section.id === activeSection)?.label ?? "Overview";
+
+  function selectSection(sectionId) {
+    setActiveSection(sectionId);
+    setIsMobileNavOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   return (
     <div className="portal-shell">
-      <header className="portal-topbar">
-        <a href="/" className="portal-brand"><img src="/dbs-kaduna-logo.png?v=20260614" alt="DBS Kaduna" /><span><strong>DBS Kaduna</strong><small>Instructor Dashboard</small></span></a>
-        <div className="portal-account"><UserCircle size={25} /><span><strong>{profile.full_name}</strong><small>{profile.email}</small></span></div>
-        <button type="button" onClick={onSignOut}><SignOut size={19} />Sign out</button>
-      </header>
+      <aside className={isMobileNavOpen ? "portal-dashboard-sidebar portal-dashboard-sidebar--open" : "portal-dashboard-sidebar"}>
+        <a href="/" className="portal-sidebar-brand"><img src="/dbs-kaduna-logo.png?v=20260614" alt="DBS Kaduna" /><span><strong>DBS Kaduna</strong><small>Instructor portal</small></span></a>
+        <nav aria-label="Instructor dashboard sections">
+          {instructorSections.map((section) => {
+            const Icon = section.icon;
+            const count = section.id === "reviews" ? pendingCount : undefined;
+            return <button className={activeSection === section.id ? "is-active" : ""} type="button" key={section.id} onClick={() => selectSection(section.id)}><Icon aria-hidden="true" size={21} weight="duotone" /><span>{section.label}</span>{count > 0 && <small>{count}</small>}</button>;
+          })}
+        </nav>
+        <div className="portal-sidebar-footer">
+          <a href="/"><ArrowDown aria-hidden="true" size={18} />Public homepage</a>
+          <button type="button" onClick={onSignOut}><SignOut aria-hidden="true" size={19} />Sign out</button>
+        </div>
+      </aside>
+
+      {isMobileNavOpen && <button className="portal-sidebar-backdrop" type="button" onClick={() => setIsMobileNavOpen(false)} aria-label="Close navigation" />}
+
+      <div className="portal-workspace">
+        <header className="portal-workspace-header">
+          <button className="portal-mobile-menu" type="button" onClick={() => setIsMobileNavOpen(true)} aria-label="Open instructor navigation"><List aria-hidden="true" size={24} /></button>
+          <div><p>Discover Bible School, Kaduna</p><h1>{activeSectionLabel}</h1></div>
+          <div className="portal-account"><span><UserCircle aria-hidden="true" size={24} weight="duotone" /></span><div><strong>{profile.full_name}</strong><small>{profile.email}</small></div></div>
+          <button className="portal-workspace-signout" type="button" onClick={onSignOut}><SignOut aria-hidden="true" size={19} /><span>Sign out</span></button>
+        </header>
 
       <main className="portal-content">
+        {activeSection === "overview" && <>
         <section className="portal-welcome">
           <div><p>Instructor workspace</p><h1>{profile.full_name}</h1><span>Guide assigned students, mark submissions, and request graduation.</span></div>
           <div className="portal-progress-card"><strong>{pendingCount}</strong><span>new answers waiting for marking</span></div>
@@ -229,10 +267,11 @@ export function InstructorDashboard({ profile, onSignOut }) {
           <article><span><BookOpenText size={24} /></span><strong>26</strong><small>Course lessons</small></article>
           <article><span><CheckCircle size={24} /></span><strong>{pendingCount}</strong><small>Waiting for marking</small></article>
         </section>
+        </>}
 
-        <CommunicationHub role="instructor" />
+        {activeSection === "messages" && <CommunicationHub role="instructor" />}
 
-        <div className="portal-teacher-layout">
+        {(activeSection === "reviews" || activeSection === "messages") && <div className="portal-teacher-layout">
           <aside className="portal-panel portal-student-list">
             <div className="portal-panel-heading"><div><p>Your class</p><h2>Assigned students</h2></div></div>
             {data.students.length === 0 ? <div className="portal-empty">No students are assigned yet.</div> : data.students.map((student) => {
@@ -246,6 +285,7 @@ export function InstructorDashboard({ profile, onSignOut }) {
               <div className="portal-empty">Choose an assigned student.</div>
             ) : (
               <>
+                {activeSection === "reviews" && <>
                 <div className="portal-panel-heading">
                   <div><p>Student record</p><h2>{selectedStudent.full_name}</h2><span>{completedCount} of 26 lessons completed</span></div>
                   {completedCount === 26 && (
@@ -294,7 +334,9 @@ export function InstructorDashboard({ profile, onSignOut }) {
                 )}
                 {message && <div className="portal-inline-message">{message}</div>}
 
-                <div className="portal-conversation-grid">
+                </>}
+
+                {activeSection === "messages" && <div className="portal-conversation-grid">
                   <section className="portal-panel">
                     <div className="portal-panel-heading">
                       <div>
@@ -413,12 +455,13 @@ export function InstructorDashboard({ profile, onSignOut }) {
                       </button>
                     </form>
                   </section>
-                </div>
+                </div>}
               </>
             )}
           </section>
-        </div>
+        </div>}
       </main>
+      </div>
     </div>
   );
 }
