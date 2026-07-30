@@ -382,28 +382,12 @@
   font-size: 0.68rem;
 }
 
-.portal-welcome-letter.is-new {
+.portal-welcome-letter.is-prompt {
   color: #ffffff;
   background: #0c4da2;
   border-color: #0c4da2;
   border-radius: 8px;
   animation: portal-welcome-letter-blink 1.1s steps(2, end) infinite;
-}
-
-.portal-welcome-letter__badge {
-  display: none;
-}
-
-.portal-welcome-letter.is-new .portal-welcome-letter__badge {
-  padding: 3px 6px;
-  display: inline-block;
-  color: #071c45;
-  background: #ffd77f;
-  border-radius: 999px;
-  font-size: 0.62rem;
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 @keyframes portal-welcome-letter-blink {
@@ -1162,7 +1146,7 @@
     transition: none !important;
   }
 
-  .portal-welcome-letter.is-new {
+  .portal-welcome-letter.is-prompt {
     animation: none;
   }
 

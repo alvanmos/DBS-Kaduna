@@ -47,7 +47,7 @@ When implementing from a selected generated mock, treat that image as the source
 - Instructor dashboards must show only assigned students, support lesson locks, marking and comments, correction returns, completion, and graduation requests.
 - Account emails must use secure invitation/password-setup links; never email plaintext passwords.
 - Send each newly registered student the supplied DBS Kaduna welcome letter as a PDF attachment.
-- Keep the welcome letter downloadable from the student dashboard and blink its PDF download control for seven days from the student's first dashboard login, respecting reduced-motion preferences.
+- Keep the welcome letter downloadable from the student dashboard and keep its PDF download control blinking, respecting reduced-motion preferences.
 - Keep enabled lesson PDF controls blinking on both learning dashboards to prompt instructors and students to open or download their study material, respecting reduced-motion preferences.
 
 ## Privacy and Communication Direction
