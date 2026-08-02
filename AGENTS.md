@@ -45,6 +45,7 @@ When implementing from a selected generated mock, treat that image as the source
 - Keep student access on `/login/student` and `/student`, and instructor access on `/login/instructor` and `/instructor`.
 - Classify accounts with no dashboard activity for 30 days as inactive in administration without deleting their records.
 - Student dashboards must show the assigned instructor, all 26 lessons and statuses, online answers, marking feedback, progress, and approved certificate downloads.
+- Present student lesson questions one at a time in a bold, colourful sequence; require each answer to be submitted before revealing the Next Question control.
 - Instructor dashboards must show only assigned students, support lesson locks, marking and comments, correction returns, completion, and graduation requests.
 - Account emails must use secure invitation/password-setup links; never email plaintext passwords.
 - Send each newly registered student the supplied DBS Kaduna welcome letter as a PDF attachment.

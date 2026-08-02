@@ -358,6 +358,16 @@ export async function submitStudentLesson(lessonNumber, answers) {
   );
 }
 
+export async function submitStudentLessonQuestion(lessonNumber, questionId, answer) {
+  throwIfError(
+    await supabase.rpc("student_submit_lesson_question", {
+      input_lesson_number: lessonNumber,
+      input_question_id: questionId,
+      input_answer: answer,
+    }),
+  );
+}
+
 export async function setLessonLock(studentId, lessonNumber, isLocked) {
   throwIfError(
     await supabase.rpc("instructor_set_lesson_lock", {
