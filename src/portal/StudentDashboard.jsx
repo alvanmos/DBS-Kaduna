@@ -16,6 +16,7 @@ import {
   SignOut,
   Trash,
   UserCircle,
+  VideoCamera,
   WarningCircle,
 } from "@phosphor-icons/react";
 import {
@@ -31,6 +32,7 @@ import {
 } from "./portalRepository.js";
 import { CommunicationHub } from "../communication/CommunicationHub.jsx";
 import "../communication/communication.css";
+import { ZoomClasses } from "./ZoomClasses.jsx";
 
 function lessonStatus(progress, lessonNumber) {
   const item = progress.find((entry) => entry.lesson_number === lessonNumber);
@@ -94,6 +96,7 @@ function buildStudentFormState(dashboard) {
 const studentSections = [
   { id: "overview", label: "Overview", icon: GraduationCap },
   { id: "lessons", label: "My lessons", icon: BookOpenText },
+  { id: "classes", label: "Online classes", icon: VideoCamera },
   { id: "messages", label: "Messages", icon: PaperPlaneTilt },
   { id: "details", label: "My details", icon: PencilSimpleLine },
 ];
@@ -375,6 +378,8 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
         </>}
 
         {activeSection === "messages" && <CommunicationHub role="student" />}
+
+        {activeSection === "classes" && <ZoomClasses role="student" />}
 
         {(activeSection === "details" || activeSection === "messages") && <div className="portal-support-layout">
           {activeSection === "details" && <section className="portal-panel">

@@ -22,6 +22,7 @@ import {
   Megaphone,
   Newspaper,
   PaperPlaneTilt,
+  PencilSimpleLine,
   Phone,
   Plus,
   Question,
@@ -34,11 +35,11 @@ import {
   UserCircle,
   UserMinus,
   UsersThree,
+  VideoCamera,
   X,
 } from "@phosphor-icons/react";
 import { adminSections } from "./adminData.js";
-import { CommunicationHub } from "../communication/CommunicationHub.jsx";
-import "../communication/communication.css";
+import { ZoomAdministration } from "../portal/ZoomAdministration.jsx";
 
 const sectionIcons = {
   dashboard: Gauge,
@@ -51,7 +52,7 @@ const sectionIcons = {
   news: Newspaper,
   recruitment: QrCode,
   forms: ClipboardText,
-  communication: Phone,
+  zoom: VideoCamera,
 };
 
 function countWhere(items, predicate) {
@@ -2455,8 +2456,8 @@ export function AdminDashboard({
         onNotify={notify}
       />
     );
-  } else if (activeSection === "communication") {
-    content = <CommunicationHub role="admin" />;
+  } else if (activeSection === "zoom") {
+    content = <ZoomAdministration instructors={data.instructors} students={data.students} lessons={data.lessons} />;
   } else {
     content = (
       <DashboardSummary

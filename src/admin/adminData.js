@@ -11,5 +11,5 @@ export const adminSections = [
   { id: "recruitment", label: "QR Campaigns" },
   { id: "forms", label: "Registration Forms" },
   { id: "news", label: "News" },
-  { id: "communication", label: "Calls & Meetings" },
+  { id: "zoom", label: "Zoom Classes" },
 ];

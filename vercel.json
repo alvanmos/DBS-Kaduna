@@ -2,6 +2,9 @@
   "functions": {
     "api/register.js": {
       "includeFiles": "public/dbs-kaduna-welcome-letter.pdf"
+    },
+    "api/zoom/webhook.js": {
+      "maxDuration": 10
     }
   },
   "rewrites": [
