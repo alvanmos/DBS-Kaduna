@@ -11,6 +11,7 @@ import {
   SignOut,
   Student,
   UserCircle,
+  VideoCamera,
   WarningCircle,
 } from "@phosphor-icons/react";
 import {
@@ -25,6 +26,7 @@ import {
 } from "./portalRepository.js";
 import { CommunicationHub } from "../communication/CommunicationHub.jsx";
 import "../communication/communication.css";
+import { ZoomClasses } from "./ZoomClasses.jsx";
 
 function progressFor(progress, studentId, lessonNumber) {
   return progress.find(
@@ -47,6 +49,7 @@ function formatMessageTime(value) {
 const instructorSections = [
   { id: "overview", label: "Overview", icon: GraduationCap },
   { id: "reviews", label: "Student reviews", icon: Student },
+  { id: "classes", label: "Zoom Classes", icon: VideoCamera },
   { id: "messages", label: "Messages", icon: PaperPlaneTilt },
 ];
 
@@ -270,6 +273,8 @@ export function InstructorDashboard({ profile, onSignOut }) {
         </>}
 
         {activeSection === "messages" && <CommunicationHub role="instructor" />}
+
+        {activeSection === "classes" && <ZoomClasses role="instructor" lessons={data.lessons} students={data.students} />}
 
         {(activeSection === "reviews" || activeSection === "messages") && <div className="portal-teacher-layout">
           <aside className="portal-panel portal-student-list">

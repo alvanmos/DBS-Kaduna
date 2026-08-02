@@ -1,0 +1,23 @@
+import crypto from "node:crypto";
+import { json, method, rateLimit, serviceClient } from "../_zoom.js";
+export const config = { api: { bodyParser: false } };
+function verify(req, raw) { const signature = req.headers["x-zm-signature"]; const timestamp = req.headers["x-zm-request-timestamp"]; if (!signature || !timestamp || Math.abs(Date.now() - Number(timestamp) * 1000) > 5 * 60_000) return false; const expected = `v0=${crypto.createHmac("sha256", process.env.ZOOM_WEBHOOK_SECRET_TOKEN || "").update(`v0:${timestamp}:${raw}`).digest("hex")}`; return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected)); }
+async function rawBody(req) { const chunks = []; for await (const chunk of req) chunks.push(Buffer.from(chunk)); return Buffer.concat(chunks).toString("utf8"); }
+export default async function handler(req, res) {
+  if (!method(req, res, ["POST"]) || !rateLimit(req, res, "zoom-webhook", 300)) return;
+  const raw = await rawBody(req); let event;
+  try { event = JSON.parse(raw); } catch { return json(res, 400, { error: "Invalid webhook payload." }); }
+  if (event.event === "endpoint.url_validation") { const plainToken = event.payload?.plainToken; if (!plainToken) return json(res, 400, { error: "Missing Zoom validation token." }); return json(res, 200, { plainToken, encryptedToken: crypto.createHmac("sha256", process.env.ZOOM_WEBHOOK_SECRET_TOKEN || "").update(plainToken).digest("hex") }); }
+  if (!process.env.ZOOM_WEBHOOK_SECRET_TOKEN || !verify(req, raw)) return json(res, 401, { error: "Invalid Zoom webhook signature." });
+  try {
+    const supabase = serviceClient(); const object = event.payload?.object || {}; const meetingId = String(object.id || object.meeting_id || ""); const eventId = String(event.event_ts || "") + ":" + event.event + ":" + meetingId + ":" + String(object.participant?.id || object.participant?.user_id || "");
+    const { error: eventError } = await supabase.from("zoom_webhook_events").insert({ event_id: eventId, event_type: event.event, meeting_id: meetingId || null, payload: event }); if (eventError?.code === "23505") return json(res, 200, { ok: true, duplicate: true }); if (eventError) throw eventError;
+    const { data: zoomClass } = await supabase.from("zoom_classes").select("id,scheduled_start,duration_minutes").eq("meeting_id", meetingId).maybeSingle(); if (!zoomClass) return json(res, 200, { ok: true });
+    if (event.event === "meeting.started") await supabase.from("zoom_classes").update({ status: "ongoing" }).eq("id", zoomClass.id);
+    if (event.event === "meeting.ended") await supabase.from("zoom_classes").update({ status: "completed" }).eq("id", zoomClass.id);
+    if (event.event === "meeting.updated") await supabase.from("zoom_classes").update({ scheduled_start: object.start_time || zoomClass.scheduled_start, duration_minutes: object.duration || zoomClass.duration_minutes }).eq("id", zoomClass.id);
+    if (event.event === "meeting.deleted") await supabase.from("zoom_classes").update({ status: "cancelled", cancelled_at: new Date().toISOString() }).eq("id", zoomClass.id);
+    if (["meeting.participant_joined", "meeting.participant_left"].includes(event.event)) { const participant = object.participant || {}; const email = String(participant.email || participant.user_email || "").toLowerCase(); let attendeeQuery = supabase.from("zoom_class_attendees").select("id,student_id,students(email,full_name)").eq("zoom_class_id", zoomClass.id); const { data: attendees } = await attendeeQuery; const attendee = attendees?.find((item) => String(item.students?.email || "").toLowerCase() === email); if (attendee) { const update = event.event.endsWith("joined") ? { joined_at: participant.join_time || new Date().toISOString(), attendance_status: "joined", joined_late: new Date(participant.join_time || Date.now()).getTime() > new Date(zoomClass.scheduled_start).getTime() + 10 * 60_000 } : { left_at: participant.leave_time || new Date().toISOString(), attendance_status: "completed" }; if (update.left_at) update.total_minutes = Math.max(0, Math.round((new Date(update.left_at).getTime() - new Date(attendee.joined_at || update.left_at).getTime()) / 60_000)); await supabase.from("zoom_class_attendees").update(update).eq("id", attendee.id); } else await supabase.from("zoom_unmatched_participants").insert({ zoom_class_id: zoomClass.id, participant_email: email || null, zoom_participant_id: participant.id || participant.user_id || null, payload: participant }); }
+    return json(res, 200, { ok: true });
+  } catch (error) { console.error("Zoom webhook processing failed", error); return json(res, 500, { error: "Webhook processing failed." }); }
+}
