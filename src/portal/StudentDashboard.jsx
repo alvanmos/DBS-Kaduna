@@ -27,7 +27,7 @@ import {
   loadStudentDashboard,
   openLessonPdf,
   sendStudentMessage,
-  submitStudentLesson,
+  submitStudentLessonQuestion,
   updateStudentData,
 } from "./portalRepository.js";
 import { CommunicationHub } from "../communication/CommunicationHub.jsx";
@@ -160,6 +160,8 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [isSubmittingQuestion, setIsSubmittingQuestion] = useState(false);
+  const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
   const [activeSection, setActiveSection] = useState("overview");
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
@@ -205,6 +207,11 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
   }, [lessonQuestions, lessonSubmissions]);
 
   useEffect(() => {
+    setActiveQuestionIndex(0);
+    setLessonMessage("");
+  }, [selectedLesson]);
+
+  useEffect(() => {
     if (data) {
       setStudentForm(buildStudentFormState(data));
     }
@@ -221,18 +228,29 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
   const currentStatus = lessonStatus(data.progress, selectedLesson);
   const completedCount = data.progress.filter((item) => item.status === "completed").length;
   const progressPercentage = Math.round((completedCount / 26) * 100);
-  const canAnswer = ["available", "returned"].includes(currentStatus);
+  const canAnswer = ["available", "in_progress", "returned"].includes(currentStatus);
   const certificate = data.certificates[0];
   const studentMessages = data.messages ?? [];
-  async function submitLesson(event) {
+  const activeQuestion = lessonQuestions[activeQuestionIndex];
+  const activeSubmission = lessonSubmissions.find((submission) => submission.question_id === activeQuestion?.id);
+  const needsAnswer = !activeSubmission || activeSubmission.status === "returned";
+  const hasNextQuestion = activeQuestionIndex < lessonQuestions.length - 1;
+
+  async function submitLessonQuestion(event) {
     event.preventDefault();
+    const answer = (answers[activeQuestion?.id] ?? "").trim();
+    if (!activeQuestion || !answer) return;
     setLessonMessage("");
+    setIsSubmittingQuestion(true);
     try {
-      await submitStudentLesson(selectedLesson, answers);
-      setLessonMessage("Lesson submitted to your instructor.");
+      await submitStudentLessonQuestion(selectedLesson, activeQuestion.id, answer);
+      const isLastQuestion = activeQuestionIndex === lessonQuestions.length - 1;
+      setLessonMessage(isLastQuestion ? "All lesson questions have been submitted to your instructor." : `Question ${activeQuestionIndex + 1} submitted. Click Next Question when you are ready.`);
       await refresh();
     } catch (error) {
       setLessonMessage(error.message);
+    } finally {
+      setIsSubmittingQuestion(false);
     }
   }
 
@@ -524,20 +542,24 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
             ) : lessonQuestions.length === 0 ? (
               <div className="portal-empty">Questions for this lesson have not been published yet.</div>
             ) : (
-              <form className="portal-question-form" onSubmit={submitLesson}>
-                {lessonQuestions.map((question, index) => {
-                  const submission = lessonSubmissions.find((item) => item.question_id === question.id);
-                  return (
-                    <article key={question.id}>
-                      <small>Question {index + 1} · {question.kind.replaceAll("_", " ")}</small>
-                      <h3>{question.prompt}</h3>
-                      <textarea rows="4" value={answers[question.id] ?? ""} onChange={(event) => setAnswers((current) => ({ ...current, [question.id]: event.target.value }))} disabled={!canAnswer} required />
-                      {submission?.feedback && <div className="portal-feedback"><strong>Instructor comment</strong><p>{submission.feedback}</p><span>Score: {submission.score ?? "Pending"}</span></div>}
-                    </article>
-                  );
-                })}
+              <form className="portal-question-form portal-question-flow" onSubmit={submitLessonQuestion}>
+                <div className="portal-question-progress" aria-label={`Question ${activeQuestionIndex + 1} of ${lessonQuestions.length}`}>
+                  <span>Lesson questions</span>
+                  <strong>Question {activeQuestionIndex + 1} of {lessonQuestions.length}</strong>
+                  <div aria-hidden="true"><i style={{ width: `${((activeQuestionIndex + 1) / lessonQuestions.length) * 100}%` }} /></div>
+                </div>
+                {activeQuestion && <article className={`portal-question-card portal-question-card--${activeQuestion.kind}`}>
+                  <small>Question {activeQuestionIndex + 1} · {activeQuestion.kind.replaceAll("_", " ")}</small>
+                  <h3>{activeQuestion.prompt}</h3>
+                  <label className="sr-only" htmlFor={`student-answer-${activeQuestion.id}`}>Your answer to question {activeQuestionIndex + 1}</label>
+                  <textarea id={`student-answer-${activeQuestion.id}`} rows="6" value={answers[activeQuestion.id] ?? ""} onChange={(event) => setAnswers((current) => ({ ...current, [activeQuestion.id]: event.target.value }))} disabled={!canAnswer || !needsAnswer} required />
+                  {activeSubmission?.feedback && <div className="portal-feedback"><strong>Instructor comment</strong><p>{activeSubmission.feedback}</p><span>Score: {activeSubmission.score ?? "Pending"}</span></div>}
+                  <div className="portal-question-navigation">
+                    {canAnswer && needsAnswer ? <button className="portal-primary-button" type="submit" disabled={isSubmittingQuestion}>{isSubmittingQuestion ? "Submitting answer..." : "Submit answer"}</button> : <span className="portal-question-submitted">Answer submitted</span>}
+                    {hasNextQuestion && !needsAnswer && <button className="portal-secondary-button portal-next-question" type="button" onClick={() => { setActiveQuestionIndex((index) => index + 1); setLessonMessage(""); }}>Next Question <span aria-hidden="true">→</span></button>}
+                  </div>
+                </article>}
                 {lessonMessage && <div className="portal-inline-message">{lessonMessage}</div>}
-                {canAnswer && <button className="portal-primary-button" type="submit">Submit lesson answers</button>}
               </form>
             )}
           </section>
