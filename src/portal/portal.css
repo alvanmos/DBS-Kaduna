@@ -1119,6 +1119,15 @@
   margin-inline: auto;
 }
 
+.portal-instructor-review-flow {
+  max-width: 920px;
+  margin-inline: auto;
+}
+
+.portal-instructor-review-flow .portal-question-progress {
+  background: linear-gradient(115deg, var(--portal-navy), #087640 60%, var(--portal-gold));
+}
+
 .portal-question-progress {
   padding: 15px 17px;
   color: #ffffff;
@@ -1167,6 +1176,14 @@
   border: 1px solid #cbdff3;
   border-radius: 16px;
   box-shadow: 0 13px 28px rgb(7 28 69 / 8%);
+}
+
+.portal-marking-list .portal-instructor-question-card {
+  padding: clamp(22px, 4vw, 36px);
+  background: linear-gradient(145deg, #f3f9ff, #ffffff 53%, #fff9e7);
+  border: 1px solid #bfdaf4;
+  border-radius: 16px;
+  box-shadow: 0 14px 30px rgb(7 28 69 / 10%);
 }
 
 .portal-question-card > small {
@@ -1514,6 +1531,19 @@
   font-size: 0.75rem;
 }
 
+.portal-instructor-question-card .portal-student-answer {
+  padding: 15px;
+  color: #2d486d;
+  background: #fffdf7;
+  border-color: #f2d58a;
+  border-left: 5px solid var(--portal-gold);
+  font-size: 0.88rem;
+}
+
+.portal-instructor-question-card .portal-student-answer strong {
+  color: var(--portal-navy);
+}
+
 .portal-student-answer p {
   margin: 5px 0 0;
   line-height: 1.5;
@@ -1524,6 +1554,22 @@
   display: grid;
   grid-template-columns: 120px 1fr;
   gap: 10px;
+}
+
+.portal-instructor-question-card .portal-review-fields {
+  padding: 15px;
+  background: #eef9f2;
+  border: 1px solid #ccebd8;
+  border-radius: 12px;
+}
+
+.portal-instructor-question-card .portal-review-fields label {
+  color: #075c34;
+}
+
+.portal-instructor-question-card .portal-review-fields input,
+.portal-instructor-question-card .portal-review-fields textarea {
+  border-color: #b7ddc7;
 }
 
 .portal-review-fields label {
@@ -1539,6 +1585,10 @@
 .portal-review-fields > div {
   grid-column: 1 / -1;
   justify-content: flex-end;
+}
+
+.portal-review-actions .portal-next-question {
+  box-shadow: 0 5px 12px rgb(20 102 180 / 22%);
 }
 
 .portal-lesson-result-actions {

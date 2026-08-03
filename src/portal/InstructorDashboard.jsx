@@ -66,6 +66,8 @@ export function InstructorDashboard({ profile, onSignOut }) {
   const [adminConversationNotice, setAdminConversationNotice] = useState(null);
   const [isSendingStudentMessage, setIsSendingStudentMessage] = useState(false);
   const [isSendingAdminMessage, setIsSendingAdminMessage] = useState(false);
+  const [isSavingReview, setIsSavingReview] = useState(false);
+  const [activeReviewIndex, setActiveReviewIndex] = useState(0);
   const [activeSection, setActiveSection] = useState("overview");
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
@@ -98,6 +100,16 @@ export function InstructorDashboard({ profile, onSignOut }) {
     ) ?? [],
     [data, lessonQuestions, selectedStudentId],
   );
+  const reviewQueue = useMemo(
+    () => lessonQuestions
+      .filter((question) => question.kind !== "thought")
+      .map((question) => ({
+        question,
+        submission: lessonSubmissions.find((submission) => submission.question_id === question.id),
+      }))
+      .filter((item) => item.submission),
+    [lessonQuestions, lessonSubmissions],
+  );
   const selectedStudentMessages = useMemo(
     () => data?.studentMessages.filter((threadMessage) => threadMessage.student_id === selectedStudentId) ?? [],
     [data, selectedStudentId],
@@ -114,6 +126,11 @@ export function InstructorDashboard({ profile, onSignOut }) {
     );
   }, [lessonSubmissions]);
 
+  useEffect(() => {
+    setActiveReviewIndex(0);
+    setMessage("");
+  }, [selectedStudentId, selectedLesson]);
+
   if (status === "loading") return <main className="portal-loading"><p>Loading assigned students...</p></main>;
   if (status === "error") return <main className="portal-error"><WarningCircle size={42} /><h1>Dashboard unavailable</h1><p>{message}</p><button type="button" onClick={refresh}>Try again</button></main>;
 
@@ -129,6 +146,12 @@ export function InstructorDashboard({ profile, onSignOut }) {
     (item) => item.student_id === selectedStudentId && item.status === "pending",
   );
   const primaryAdmin = data.admins[0] ?? null;
+  const activeReview = reviewQueue[activeReviewIndex];
+  const activeReviewQuestion = activeReview?.question;
+  const activeReviewSubmission = activeReview?.submission;
+  const activeReviewState = activeReviewSubmission ? reviews[activeReviewSubmission.id] ?? {} : {};
+  const activeReviewIsMarked = activeReviewSubmission?.status === "marked";
+  const hasNextReview = activeReviewIndex < reviewQueue.length - 1;
 
   function updateReview(submissionId, changes) {
     setReviews((current) => ({
@@ -138,13 +161,27 @@ export function InstructorDashboard({ profile, onSignOut }) {
   }
 
   async function saveReview(submissionId, reviewStatus) {
+    const review = reviews[submissionId] ?? {};
+    if (reviewStatus === "marked" && (review.score === "" || review.score == null)) {
+      setMessage("Enter a score before marking this question.");
+      return;
+    }
+
     try {
-      const review = reviews[submissionId] ?? {};
+      setIsSavingReview(true);
       await reviewSubmission(submissionId, review.score, review.feedback, reviewStatus);
-      setMessage(reviewStatus === "returned" ? "Answer returned for correction." : "Score and comment saved.");
+      setMessage(
+        reviewStatus === "returned"
+          ? "Answer returned for correction. Grade it before continuing."
+          : hasNextReview
+            ? `Question ${activeReviewIndex + 1} marked. Click Next Question when you are ready.`
+            : "Score and comment saved. All submitted questions in this lesson are marked.",
+      );
       await refresh();
     } catch (error) {
       setMessage(error.message);
+    } finally {
+      setIsSavingReview(false);
     }
   }
 
@@ -313,25 +350,29 @@ export function InstructorDashboard({ profile, onSignOut }) {
                   </div>
                 </div>
 
-                {lessonQuestions.length === 0 ? <div className="portal-empty">No published questions for this lesson.</div> : (
-                  <div className="portal-marking-list">
-                    {lessonQuestions.map((question, index) => {
-                      const submission = lessonSubmissions.find((item) => item.question_id === question.id);
-                      const review = submission ? reviews[submission.id] ?? {} : {};
-                      return (
-                        <article key={question.id}>
-                          <small>Question {index + 1}</small><h3>{question.prompt}</h3>
-                          <div className="portal-student-answer"><strong>Student answer</strong><p>{submission ? answerText(submission.answer) : "Not submitted"}</p></div>
-                          {submission && (
-                            <div className="portal-review-fields">
-                              <label>Score<input type="number" min="0" max="100" value={review.score ?? ""} onChange={(event) => updateReview(submission.id, { score: event.target.value })} /></label>
-                              <label>Comment<textarea rows="3" value={review.feedback ?? ""} onChange={(event) => updateReview(submission.id, { feedback: event.target.value })} /></label>
-                              <div><button className="portal-secondary-button" type="button" onClick={() => saveReview(submission.id, "returned")}>Return answer</button><button className="portal-primary-button" type="button" onClick={() => saveReview(submission.id, "marked")}>Save score</button></div>
-                            </div>
-                          )}
-                        </article>
-                      );
-                    })}
+                {lessonQuestions.length === 0 ? <div className="portal-empty">No published questions for this lesson.</div> : reviewQueue.length === 0 ? (
+                  <div className="portal-empty">This student has no submitted, gradeable questions in this lesson yet.</div>
+                ) : (
+                  <div className="portal-marking-list portal-instructor-review-flow">
+                    <div className="portal-question-progress" aria-label={`Submitted question ${activeReviewIndex + 1} of ${reviewQueue.length}`}>
+                      <span>Submitted questions</span>
+                      <strong>Question {activeReviewIndex + 1} of {reviewQueue.length}</strong>
+                      <div aria-hidden="true"><i style={{ width: `${((activeReviewIndex + 1) / reviewQueue.length) * 100}%` }} /></div>
+                    </div>
+                    {activeReviewQuestion && activeReviewSubmission && <article className={`portal-question-card portal-instructor-question-card portal-question-card--${activeReviewQuestion.kind}`}>
+                      <small>Question {activeReviewIndex + 1} · {activeReviewQuestion.kind.replaceAll("_", " ")}</small>
+                      <h3>{activeReviewQuestion.prompt}</h3>
+                      <div className="portal-student-answer"><strong>{selectedStudent.full_name}'s answer</strong><p>{answerText(activeReviewSubmission.answer)}</p></div>
+                      <div className="portal-review-fields">
+                        <label>Score<input type="number" min="0" max="100" value={activeReviewState.score ?? ""} onChange={(event) => updateReview(activeReviewSubmission.id, { score: event.target.value })} disabled={isSavingReview} required /></label>
+                        <label>Comment<textarea rows="4" value={activeReviewState.feedback ?? ""} onChange={(event) => updateReview(activeReviewSubmission.id, { feedback: event.target.value })} disabled={isSavingReview} placeholder="Encourage the student and explain the grade." /></label>
+                        <div className="portal-review-actions">
+                          <button className="portal-secondary-button" type="button" disabled={isSavingReview} onClick={() => saveReview(activeReviewSubmission.id, "returned")}>Return for correction</button>
+                          <button className="portal-primary-button" type="button" disabled={isSavingReview} onClick={() => saveReview(activeReviewSubmission.id, "marked")}>{isSavingReview ? "Saving grade..." : activeReviewIsMarked ? "Update grade" : "Save score"}</button>
+                          {hasNextReview && activeReviewIsMarked && <button className="portal-secondary-button portal-next-question" type="button" onClick={() => { setActiveReviewIndex((index) => index + 1); setMessage(""); }}>Next Question <span aria-hidden="true">→</span></button>}
+                        </div>
+                      </div>
+                    </article>}
                   </div>
                 )}
                 {lessonSubmissions.length > 0 && (

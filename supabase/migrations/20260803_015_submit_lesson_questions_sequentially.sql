@@ -101,9 +101,15 @@ begin
     );
 
   insert into public.student_lesson_progress (student_id, lesson_number, status, is_locked, started_at)
-  values (student_record.id, input_lesson_number, case when remaining_questions = 0 then 'submitted' else 'in_progress' end, false, now())
+  values (
+    student_record.id,
+    input_lesson_number,
+    (case when remaining_questions = 0 then 'submitted' else 'in_progress' end)::public.lesson_progress_status,
+    false,
+    now()
+  )
   on conflict (student_id, lesson_number) do update set
-    status = case when remaining_questions = 0 then 'submitted' else 'in_progress' end,
+    status = (case when remaining_questions = 0 then 'submitted' else 'in_progress' end)::public.lesson_progress_status,
     is_locked = false,
     started_at = coalesce(public.student_lesson_progress.started_at, now());
 
