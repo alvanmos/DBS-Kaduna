@@ -968,6 +968,45 @@
   gap: 20px;
 }
 
+.portal-details-layout {
+  margin-bottom: 20px;
+}
+
+.portal-detail-panel {
+  overflow: hidden;
+  padding: 0;
+  border-color: #cddff1;
+  box-shadow: 0 14px 32px rgb(7 28 69 / 7%);
+}
+
+.portal-detail-panel .portal-panel-heading {
+  min-height: 140px;
+  padding: clamp(22px, 3vw, 34px);
+  color: #fff;
+  background:
+    radial-gradient(circle at 90% 16%, rgb(255 255 255 / 16%), transparent 24%),
+    linear-gradient(120deg, var(--portal-navy), #0c5ca8 62%, #087b45);
+}
+
+.portal-detail-panel .portal-panel-heading h2,
+.portal-detail-panel .portal-panel-heading > div > span {
+  color: #fff;
+}
+
+.portal-detail-panel .portal-panel-heading > div > p {
+  color: #f7d577;
+}
+
+.portal-detail-panel .portal-panel-heading > svg {
+  width: 54px;
+  height: 54px;
+  padding: 13px;
+  color: var(--portal-navy);
+  background: #f7d577;
+  border-radius: 16px;
+  box-shadow: 0 10px 20px rgb(2 28 74 / 22%);
+}
+
 .portal-lesson-list,
 .portal-student-list {
   margin-top: 16px;
@@ -1319,17 +1358,38 @@
 }
 
 .portal-detail-form {
-  margin-top: 18px;
+  margin: 0;
+  padding: clamp(22px, 3vw, 34px);
   display: grid;
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
 }
 
-.portal-detail-form label {
+.portal-detail-field {
   display: grid;
   gap: 6px;
   color: #394b66;
   font-size: 0.73rem;
   font-weight: 750;
+}
+
+.portal-detail-field--wide,
+.portal-detail-checkbox,
+.portal-detail-form .portal-inline-message,
+.portal-detail-actions {
+  grid-column: 1 / -1;
+}
+
+.portal-detail-field input,
+.portal-detail-field select,
+.portal-detail-field textarea {
+  min-height: 48px;
+  border-color: #c7d8e9;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 78%);
+}
+
+.portal-detail-field textarea {
+  min-height: 96px;
 }
 
 .portal-detail-checkbox {
@@ -1352,7 +1412,11 @@
 .portal-detail-actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: space-between;
   gap: 10px;
+  margin-top: 2px;
+  padding-top: 18px;
+  border-top: 1px solid #e4ebf3;
 }
 
 .portal-danger-button {
@@ -1998,6 +2062,10 @@
   }
 
   .portal-review-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-detail-form {
     grid-template-columns: 1fr;
   }
 

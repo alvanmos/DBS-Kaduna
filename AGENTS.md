@@ -45,6 +45,7 @@ When implementing from a selected generated mock, treat that image as the source
 - Keep student access on `/login/student` and `/student`, and instructor access on `/login/instructor` and `/instructor`.
 - Classify accounts with no dashboard activity for 30 days as inactive in administration without deleting their records.
 - Student dashboards must show the assigned instructor, all 26 lessons and statuses, online answers, marking feedback, progress, and approved certificate downloads.
+- Keep the student "My details" workspace full-width, with a polished responsive multi-column profile form on larger screens.
 - Present student lesson questions one at a time in a bold, colourful sequence; require each answer to be submitted before revealing the Next Question control.
 - Instructor dashboards must show only assigned students, support lesson locks, marking and comments, correction returns, completion, and graduation requests.
 - Present submitted, gradeable instructor-review questions one at a time in a bold, colourful sequence; require a saved score before revealing the Next Question control, and exclude Thought Questions from grading.

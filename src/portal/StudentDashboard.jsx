@@ -116,7 +116,7 @@ function StudentDetailField({ field, value, onChange }) {
   }
 
   return (
-    <label>
+    <label className={field.type === "textarea" ? "portal-detail-field portal-detail-field--wide" : "portal-detail-field"}>
       <span>{field.label}</span>
       {field.type === "textarea" ? (
         <textarea
@@ -399,8 +399,8 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
 
         {activeSection === "classes" && <ZoomClasses role="student" />}
 
-        {(activeSection === "details" || activeSection === "messages") && <div className="portal-support-layout">
-          {activeSection === "details" && <section className="portal-panel">
+        {(activeSection === "details" || activeSection === "messages") && <div className={activeSection === "details" ? "portal-details-layout" : "portal-support-layout"}>
+          {activeSection === "details" && <section className="portal-panel portal-detail-panel">
             <div className="portal-panel-heading">
               <div>
                 <p>Privacy & data controls</p>
