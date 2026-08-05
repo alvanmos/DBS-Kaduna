@@ -3,11 +3,14 @@ import {
   ArrowDown,
   BookOpenText,
   CheckCircle,
+  EnvelopeSimple,
   FilePdf,
   GraduationCap,
   LockKey,
   List,
+  MapPin,
   PaperPlaneTilt,
+  Phone,
   SignOut,
   Student,
   UserCircle,
@@ -44,6 +47,19 @@ function formatMessageTime(value) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function StudentContactDetails({ student }) {
+  return (
+    <section className="portal-student-contact-card" aria-label={`${student.full_name}'s contact information`}>
+      <p>Student contact information</p>
+      <div>
+        <span><EnvelopeSimple aria-hidden="true" size={18} /><strong>Email</strong>{student.email ? <a href={`mailto:${student.email}`}>{student.email}</a> : <em>Not provided</em>}</span>
+        <span><Phone aria-hidden="true" size={18} /><strong>Phone</strong>{student.whatsapp ? <a href={`tel:${student.whatsapp}`}>{student.whatsapp}</a> : <em>Not provided</em>}</span>
+        <span><MapPin aria-hidden="true" size={18} /><strong>Address</strong><b>{student.address || student.location_name || "Not provided"}</b></span>
+      </div>
+    </section>
+  );
 }
 
 const instructorSections = [
@@ -335,6 +351,8 @@ export function InstructorDashboard({ profile, onSignOut }) {
                   )}
                 </div>
 
+                <StudentContactDetails student={selectedStudent} />
+
                 <div className="portal-teacher-lessons">
                   {data.lessons.map((lesson) => {
                     const item = progressFor(data.progress, selectedStudent.id, lesson.number);
@@ -392,6 +410,7 @@ export function InstructorDashboard({ profile, onSignOut }) {
                       </div>
                       <PaperPlaneTilt size={34} weight="duotone" />
                     </div>
+                    <StudentContactDetails student={selectedStudent} />
                     <div className="portal-message-thread" role="log" aria-label={`Messages with ${selectedStudent.full_name}`}>
                       {selectedStudentMessages.length === 0 ? (
                         <div className="portal-empty">No messages yet with this student.</div>
