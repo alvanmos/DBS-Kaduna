@@ -43,6 +43,7 @@ When implementing from a selected generated mock, treat that image as the source
 
 - Organize student and instructor portals with the same branded sidebar, active-section navigation, responsive mobile drawer, and focused workspace pattern used by administration, while preserving all learning, marking, messaging, certificate, and data-control functionality.
 - Keep student access on `/login/student` and `/student`, and instructor access on `/login/instructor` and `/instructor`.
+- Make the student Online classes workspace equally organized and polished, with a branded hero, concise class summary, clear schedule hierarchy, and responsive composition.
 - Make the student Messages workspace a full-width, polished counterpart to “My details,” with the same branded hero treatment, well-defined conversation area, and responsive composition.
 - Classify accounts with no dashboard activity for 30 days as inactive in administration without deleting their records.
 - Student dashboards must show the assigned instructor, all 26 lessons and statuses, online answers, marking feedback, progress, and approved certificate downloads.
