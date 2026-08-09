@@ -22,6 +22,7 @@ When implementing from a selected generated mock, treat that image as the source
 
 - Keep administration on `/login/admin` and `/admin`, separate from the public homepage.
 - Use the same DBS Kaduna navy, green, white, and warm-gold visual system.
+- Present every administration workspace with a consistent branded hero, clear page hierarchy, structured content panels, and responsive spacing, while preserving all management controls.
 - Support student, instructor, lesson, question, certificate, report, and news management.
 - Keep all 26 lesson upload slots visible and identify lesson PDFs as protected content.
 - Treat the current browser-persisted data and password setup as prototype behavior only.

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { DownloadSimple, WarningCircle } from "@phosphor-icons/react";
+import { DownloadSimple, VideoCamera, WarningCircle } from "@phosphor-icons/react";
 import {
   adminZoomClassAction,
   downloadZoomCsv,
@@ -49,12 +49,15 @@ export function ZoomAdministration({ instructors, students, lessons }) {
   return (
     <section className="zoom-admin">
       <div className="admin-page-heading zoom-admin-heading">
-        <div>
-          <p>Zoom oversight</p>
-          <h2>Zoom Classes</h2>
-          <span>
-            Monitor classes, linked accounts, attendance, and securely recorded Zoom errors.
-          </span>
+        <div className="admin-page-heading__copy">
+          <span className="admin-page-heading__icon"><VideoCamera aria-hidden="true" size={27} weight="duotone" /></span>
+          <div>
+            <p>Zoom oversight</p>
+            <h2>Zoom Classes</h2>
+            <span>
+              Monitor classes, linked accounts, attendance, and securely recorded Zoom errors.
+            </span>
+          </div>
         </div>
         <button
           className="admin-secondary-button"
