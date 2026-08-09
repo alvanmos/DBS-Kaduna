@@ -581,16 +581,45 @@
 }
 
 .admin-page-heading {
-  margin-bottom: 24px;
+  min-height: 154px;
+  margin-bottom: 22px;
+  padding: clamp(21px, 3vw, 32px);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 22px;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 91% 16%, rgb(255 255 255 / 15%), transparent 24%),
+    radial-gradient(circle at 78% 100%, rgb(90 214 148 / 18%), transparent 30%),
+    linear-gradient(118deg, var(--admin-navy), #0c5ca8 62%, #087b45);
+  border: 1px solid rgb(7 28 69 / 12%);
+  border-radius: 17px;
+  box-shadow: 0 16px 34px rgb(7 28 69 / 13%);
+}
+
+.admin-page-heading__copy {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.admin-page-heading__icon {
+  width: 54px;
+  height: 54px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: var(--admin-navy);
+  background: #f7d577;
+  border-radius: 16px;
+  box-shadow: 0 10px 20px rgb(2 28 74 / 22%);
 }
 
 .admin-page-heading p {
   margin: 0 0 6px;
-  color: var(--admin-green);
+  color: #f7d577;
   font-size: 0.72rem;
   font-weight: 850;
   letter-spacing: 0.12em;
@@ -599,17 +628,38 @@
 
 .admin-page-heading h2 {
   margin: 0;
-  color: var(--admin-navy);
+  color: #ffffff;
   font-size: clamp(1.65rem, 2.5vw, 2.35rem);
   letter-spacing: -0.04em;
 }
 
-.admin-page-heading span:not(.admin-status) {
+.admin-page-heading__copy > div > span:not(.admin-status) {
   display: block;
   max-width: 780px;
   margin-top: 8px;
-  color: var(--admin-muted);
+  color: rgb(255 255 255 / 84%);
   line-height: 1.5;
+}
+
+.admin-page-heading > .admin-status {
+  color: #ffffff;
+  background: rgb(255 255 255 / 15%);
+  border: 1px solid rgb(255 255 255 / 22%);
+}
+
+.admin-page-heading .admin-primary-button,
+.admin-page-heading .admin-secondary-button {
+  color: var(--admin-navy);
+  background: #ffffff;
+  border-color: #ffffff;
+  box-shadow: 0 7px 18px rgb(2 28 74 / 18%);
+}
+
+.admin-page-heading .admin-primary-button:hover,
+.admin-page-heading .admin-secondary-button:hover {
+  color: #ffffff;
+  background: var(--admin-navy);
+  border-color: var(--admin-navy);
 }
 
 .admin-metric-grid {
@@ -1982,8 +2032,19 @@
   }
 
   .admin-page-heading {
+    min-height: 0;
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .admin-page-heading__copy {
+    gap: 12px;
+  }
+
+  .admin-page-heading__icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
   }
 
   .admin-page-heading h2 {

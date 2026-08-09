@@ -55,6 +55,19 @@ const sectionIcons = {
   zoom: VideoCamera,
 };
 
+const pageHeadingIcons = {
+  "Dashboard summary": Gauge,
+  "Student management": Student,
+  "Instructor management": UsersThree,
+  "Lesson management": BookOpenText,
+  "Question management": Question,
+  Certificates: Certificate,
+  Reports: ChartBar,
+  Recruitment: QrCode,
+  "Registration forms": ClipboardText,
+  News: Newspaper,
+};
+
 function countWhere(items, predicate) {
   return items.filter(predicate).length;
 }
@@ -101,12 +114,16 @@ function EmptyState({ children }) {
 }
 
 function PageHeading({ eyebrow, title, description, action }) {
+  const Icon = pageHeadingIcons[eyebrow] ?? Gauge;
   return (
     <div className="admin-page-heading">
-      <div>
-        <p>{eyebrow}</p>
-        <h2>{title}</h2>
-        <span>{description}</span>
+      <div className="admin-page-heading__copy">
+        <span className="admin-page-heading__icon"><Icon aria-hidden="true" size={27} weight="duotone" /></span>
+        <div>
+          <p>{eyebrow}</p>
+          <h2>{title}</h2>
+          <span>{description}</span>
+        </div>
       </div>
       {action}
     </div>
@@ -2555,7 +2572,7 @@ export function AdminDashboard({
           </button>
         </header>
 
-        <main className="admin-content">{content}</main>
+        <main className={`admin-content admin-content--${activeSection}`}>{content}</main>
       </div>
 
       {toast && (
