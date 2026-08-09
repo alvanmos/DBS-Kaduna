@@ -399,7 +399,7 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
 
         {activeSection === "classes" && <ZoomClasses role="student" />}
 
-        {(activeSection === "details" || activeSection === "messages") && <div className={activeSection === "details" ? "portal-details-layout" : "portal-support-layout"}>
+        {(activeSection === "details" || activeSection === "messages") && <div className={activeSection === "details" ? "portal-details-layout" : "portal-support-layout portal-messages-layout"}>
           {activeSection === "details" && <section className="portal-panel portal-detail-panel">
             <div className="portal-panel-heading">
               <div>
@@ -442,7 +442,7 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
             </form>
           </section>}
 
-          {activeSection === "messages" && <section className="portal-panel">
+          {activeSection === "messages" && <section className="portal-panel portal-message-panel">
             <div className="portal-panel-heading">
               <div>
                 <p>Support conversation</p>
@@ -457,28 +457,36 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
             </div>
             {data.instructor ? (
               <>
-                <div className="portal-message-thread" role="log" aria-label="Messages with your instructor">
-                  {studentMessages.length === 0 ? (
-                    <div className="portal-empty">No messages yet. Send your first question or update.</div>
-                  ) : studentMessages.map((threadMessage) => {
-                    const isOwnMessage = threadMessage.sender_profile_id === data.profile.id;
-                    return (
-                      <article
-                        className={
-                          isOwnMessage
-                            ? "portal-message-card portal-message-card--own"
-                            : "portal-message-card"
-                        }
-                        key={threadMessage.id}
-                      >
-                        <strong>{isOwnMessage ? "You" : data.instructor.name}</strong>
-                        <p>{threadMessage.body}</p>
-                        <small>{formatMessageTime(threadMessage.created_at)}</small>
-                      </article>
-                    );
-                  })}
+                <div className="portal-message-workspace">
+                  <div className="portal-message-contact">
+                    <span><UserCircle aria-hidden="true" size={28} weight="duotone" /></span>
+                    <div><small>Your assigned instructor</small><strong>{data.instructor.name}</strong></div>
+                    <p>Private conversation</p>
+                  </div>
+                  <div className="portal-message-thread" role="log" aria-label="Messages with your instructor">
+                    {studentMessages.length === 0 ? (
+                      <div className="portal-empty">No messages yet. Send your first question or update.</div>
+                    ) : studentMessages.map((threadMessage) => {
+                      const isOwnMessage = threadMessage.sender_profile_id === data.profile.id;
+                      return (
+                        <article
+                          className={
+                            isOwnMessage
+                              ? "portal-message-card portal-message-card--own"
+                              : "portal-message-card"
+                          }
+                          key={threadMessage.id}
+                        >
+                          <strong>{isOwnMessage ? "You" : data.instructor.name}</strong>
+                          <p>{threadMessage.body}</p>
+                          <small>{formatMessageTime(threadMessage.created_at)}</small>
+                        </article>
+                      );
+                    })}
+                  </div>
                 </div>
                 <form className="portal-message-form" onSubmit={sendInstructorNote}>
+                  <div className="portal-message-compose-heading"><div><p>New message</p><span>Keep your instructor up to date with a question, prayer request, or lesson update.</span></div></div>
                   <label>
                     <span className="sr-only">Message your instructor</span>
                     <textarea
