@@ -1186,7 +1186,7 @@ function QuestionManagement({
               {lessonQuestions.map((question, index) => (
                 <li key={question.id}>
                   <span className="admin-question-order">{index + 1}</span>
-                  <div>
+                  <div className="admin-question-summary">
                     <strong>{question.prompt}</strong>
                     <small>
                       {question.type} · {question.marker}
