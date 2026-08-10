@@ -2357,7 +2357,10 @@ export function AdminDashboard({
       lessons: countWhere(data.lessons, (lesson) => lesson.status !== "Uploaded"),
       questions: data.questions.length,
       certificates: data.certificates.length,
-      recruitment: data.recruitmentEnrolments.length,
+      recruitment: countWhere(
+        data.recruitmentCampaigns,
+        (campaign) => campaign.status === "Active",
+      ),
       forms: data.registrationForms.length,
       news: data.news.length,
     }),
