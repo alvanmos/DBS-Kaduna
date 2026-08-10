@@ -1484,6 +1484,353 @@
   cursor: not-allowed;
 }
 
+/* Zoom administration */
+.zoom-admin {
+  display: grid;
+  gap: 20px;
+}
+
+.zoom-admin-filters {
+  padding: clamp(18px, 2.4vw, 26px);
+  display: grid;
+  gap: 18px;
+  background:
+    radial-gradient(circle at 92% 16%, rgb(45 130 204 / 10%), transparent 25%),
+    linear-gradient(135deg, #ffffff, #f4f8fe);
+}
+
+.zoom-admin-filter-heading strong,
+.zoom-admin-filter-heading span {
+  display: block;
+}
+
+.zoom-admin-filter-heading strong {
+  color: var(--admin-navy);
+  font-size: 1rem;
+}
+
+.zoom-admin-filter-heading span {
+  max-width: 680px;
+  margin-top: 5px;
+  color: var(--admin-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.zoom-admin-filter-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr)) auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.zoom-admin-filter-fields label {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  color: var(--admin-navy);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.zoom-admin-filter-fields select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 9px 34px 9px 12px;
+  color: var(--admin-ink);
+  background: #ffffff;
+  border: 1px solid #c9d6e5;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.zoom-admin-filter-fields select:focus {
+  border-color: var(--admin-blue);
+  outline: 3px solid rgb(12 77 162 / 12%);
+}
+
+.zoom-admin-filter-submit {
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.zoom-admin-section-heading {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.zoom-admin-section-heading p,
+.zoom-admin-section-heading h3 {
+  margin: 0;
+}
+
+.zoom-admin-section-heading p {
+  color: var(--admin-green);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.zoom-admin-section-heading h3 {
+  margin-top: 5px;
+  color: var(--admin-navy);
+  font-size: 1.18rem;
+}
+
+.zoom-admin-count,
+.zoom-admin-status {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.71rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-transform: capitalize;
+}
+
+.zoom-admin-count {
+  color: var(--admin-blue);
+  background: var(--admin-blue-soft);
+}
+
+.zoom-admin-status--upcoming,
+.zoom-admin-status--connected {
+  color: #087640;
+  background: var(--admin-green-soft);
+}
+
+.zoom-admin-status--ongoing {
+  color: var(--admin-blue);
+  background: var(--admin-blue-soft);
+}
+
+.zoom-admin-status--completed,
+.zoom-admin-status--deactivated {
+  color: #5f6d7e;
+  background: #eef2f6;
+}
+
+.zoom-admin-status--cancelled,
+.zoom-admin-status--error {
+  color: #a92f35;
+  background: #fff0f0;
+}
+
+.zoom-admin-table {
+  min-width: 0;
+  padding: clamp(18px, 2.4vw, 26px);
+}
+
+.zoom-admin-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #d7e1ee;
+  border-radius: 13px;
+  background: #ffffff;
+}
+
+.zoom-admin-table table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+}
+
+.zoom-admin-table caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.zoom-admin-table th,
+.zoom-admin-table td {
+  padding: 15px 16px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid #e8edf4;
+}
+
+.zoom-admin-table th {
+  color: #ffffff;
+  background: var(--admin-navy);
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.zoom-admin-table tbody tr:nth-child(even) {
+  background: #f8fbff;
+}
+
+.zoom-admin-table tbody tr:hover {
+  background: #edf7f1;
+}
+
+.zoom-admin-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.zoom-admin-table td {
+  color: var(--admin-ink);
+  font-size: 0.83rem;
+  line-height: 1.5;
+}
+
+.zoom-admin-class-cell {
+  min-width: 205px;
+}
+
+.zoom-admin-class-cell strong,
+.zoom-admin-class-cell small {
+  display: block;
+}
+
+.zoom-admin-class-cell strong {
+  color: var(--admin-navy);
+  font-size: 0.88rem;
+}
+
+.zoom-admin-class-cell small {
+  margin-top: 4px;
+  color: var(--admin-muted);
+  font-size: 0.72rem;
+}
+
+.zoom-admin-attendees {
+  min-width: 150px;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  list-style: none;
+}
+
+.zoom-admin-attendees li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 8px;
+  align-items: baseline;
+}
+
+.zoom-admin-attendees li::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-top: 0.5em;
+  background: var(--admin-blue);
+  border-radius: 50%;
+}
+
+.zoom-admin-attendees strong {
+  color: var(--admin-navy);
+  font-weight: 750;
+}
+
+.zoom-admin-attendees span {
+  grid-column: 2;
+  color: var(--admin-muted);
+  font-size: 0.72rem;
+  text-transform: capitalize;
+}
+
+.zoom-admin-actions {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.zoom-admin-actions .admin-secondary-button,
+.zoom-admin-actions .admin-danger-button {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+}
+
+.zoom-admin-no-actions {
+  color: var(--admin-muted);
+  font-size: 0.76rem;
+  font-style: italic;
+}
+
+.zoom-admin-accounts,
+.zoom-admin-failures {
+  padding: clamp(18px, 2.4vw, 26px);
+}
+
+.zoom-admin-account-list {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  list-style: none;
+}
+
+.zoom-admin-account-list li {
+  min-width: 0;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  background: #f8fafc;
+  border: 1px solid var(--admin-line);
+  border-radius: 11px;
+}
+
+.zoom-admin-account-avatar {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  color: var(--admin-blue);
+  background: var(--admin-blue-soft);
+  border-radius: 50%;
+  font-size: 0.92rem;
+  font-weight: 850;
+}
+
+.zoom-admin-account-list strong,
+.zoom-admin-account-list span {
+  display: block;
+}
+
+.zoom-admin-account-list strong {
+  overflow: hidden;
+  color: var(--admin-navy);
+  font-size: 0.84rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zoom-admin-account-list div span {
+  overflow: hidden;
+  margin-top: 3px;
+  color: var(--admin-muted);
+  font-size: 0.73rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zoom-admin-error,
+.zoom-admin-failures .admin-empty-state {
+  margin: 0;
+}
+
 .admin-certificate-generator {
   display: grid;
   gap: 13px;
@@ -2152,10 +2499,34 @@
     width: 100%;
   }
 
+  .zoom-admin-filter-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .zoom-admin-filter-submit {
+    width: 100%;
+    grid-column: 1 / -1;
+  }
+
+  .zoom-admin-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .admin-toast {
     right: 16px;
     bottom: 16px;
     left: 16px;
+  }
+}
+
+@media (max-width: 520px) {
+  .zoom-admin-filter-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .zoom-admin-account-list {
+    grid-template-columns: 1fr;
   }
 }
 

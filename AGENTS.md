@@ -24,6 +24,7 @@ When implementing from a selected generated mock, treat that image as the source
 - Use the same DBS Kaduna navy, green, white, and warm-gold visual system.
 - Present every administration workspace with a consistent branded hero, clear page hierarchy, structured content panels, and responsive spacing, while preserving all management controls.
 - Lay out question-order cards horizontally: let the prompt use the full available row width, with the type selector and action controls arranged across a separate full-width control row.
+- Keep the admin Zoom Classes filters, register, attendance details, and actions in clearly separated responsive grids; never allow labels or meeting details to overlap.
 - Support student, instructor, lesson, question, certificate, report, and news management.
 - Keep all 26 lesson upload slots visible and identify lesson PDFs as protected content.
 - Treat the current browser-persisted data and password setup as prototype behavior only.
