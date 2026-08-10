@@ -135,7 +135,7 @@ export function ZoomAdministration({ instructors, students, lessons }) {
               <option value="deactivated">Deactivated</option>
             </select>
           </label>
-          <button className="admin-primary-button" type="button" onClick={refresh}>
+          <button className="admin-primary-button zoom-admin-filter-submit" type="button" onClick={refresh}>
             Apply filters
           </button>
         </div>
