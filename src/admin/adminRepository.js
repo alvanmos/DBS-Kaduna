@@ -90,6 +90,15 @@ function currentLessonNumber(progress) {
   return nextLesson?.lesson_number ?? 26;
 }
 
+function submissionNeedsMarking(submission, completedLessonsByStudent, lessonByQuestion) {
+  return (
+    submission.status === "submitted" &&
+    !completedLessonsByStudent
+      .get(submission.student_id)
+      ?.has(lessonByQuestion.get(submission.question_id))
+  );
+}
+
 function throwIfError(result) {
   if (result.error) throw result.error;
   return result.data ?? [];
@@ -190,7 +199,7 @@ export async function loadAdminData() {
     supabase.from("student_lesson_progress").select("*"),
     supabase
       .from("submissions")
-      .select("student_id, marker_instructor_id, status"),
+      .select("student_id, question_id, marker_instructor_id, status"),
     supabase
       .from("graduation_requests")
       .select("student_id, requested_by_instructor_id, status"),
@@ -234,6 +243,16 @@ export async function loadAdminData() {
   ] = await recruitmentDataPromise;
 
   const profilesById = new Map(profiles.map((profile) => [profile.id, profile]));
+  const lessonByQuestion = new Map(
+    questions.map((question) => [question.id, question.lesson_number]),
+  );
+  const completedLessonsByStudent = new Map();
+  progress.forEach((item) => {
+    if (item.status !== "completed") return;
+    const completedLessons = completedLessonsByStudent.get(item.student_id) ?? new Set();
+    completedLessons.add(item.lesson_number);
+    completedLessonsByStudent.set(item.student_id, completedLessons);
+  });
   const instructorNames = new Map();
 
   const mappedInstructors = instructors.map((instructor) => {
@@ -256,7 +275,11 @@ export async function loadAdminData() {
       unmarked: submissions.filter(
         (submission) =>
           submission.marker_instructor_id === instructor.id &&
-          submission.status === "submitted",
+          submissionNeedsMarking(
+            submission,
+            completedLessonsByStudent,
+            lessonByQuestion,
+          ),
       ).length,
       graduationRequests: graduationRequests.filter(
         (request) =>

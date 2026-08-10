@@ -37,6 +37,17 @@ function progressFor(progress, studentId, lessonNumber) {
   );
 }
 
+function submissionNeedsMarking(submission, progress, questions) {
+  if (submission.status !== "submitted") return false;
+  const question = questions.find((item) => item.id === submission.question_id);
+  return !progress.some(
+    (item) =>
+      item.student_id === submission.student_id &&
+      item.lesson_number === question?.lesson_number &&
+      item.status === "completed",
+  );
+}
+
 function answerText(answer) {
   return typeof answer === "string" ? answer : answer == null ? "" : String(answer);
 }
@@ -150,7 +161,9 @@ export function InstructorDashboard({ profile, onSignOut }) {
   if (status === "loading") return <main className="portal-loading"><p>Loading assigned students...</p></main>;
   if (status === "error") return <main className="portal-error"><WarningCircle size={42} /><h1>Dashboard unavailable</h1><p>{message}</p><button type="button" onClick={refresh}>Try again</button></main>;
 
-  const pendingCount = data.submissions.filter((item) => item.status === "submitted").length;
+  const pendingCount = data.submissions.filter((item) =>
+    submissionNeedsMarking(item, data.progress, data.questions),
+  ).length;
   const currentProgress = selectedStudent
     ? progressFor(data.progress, selectedStudent.id, selectedLesson)
     : null;
@@ -333,7 +346,11 @@ export function InstructorDashboard({ profile, onSignOut }) {
           <aside className="portal-panel portal-student-list">
             <div className="portal-panel-heading"><div><p>Your class</p><h2>Assigned students</h2></div></div>
             {data.students.length === 0 ? <div className="portal-empty">No students are assigned yet.</div> : data.students.map((student) => {
-              const studentPending = data.submissions.filter((item) => item.student_id === student.id && item.status === "submitted").length;
+              const studentPending = data.submissions.filter(
+                (item) =>
+                  item.student_id === student.id &&
+                  submissionNeedsMarking(item, data.progress, data.questions),
+              ).length;
               return <button className={selectedStudentId === student.id ? "is-active" : ""} type="button" key={student.id} onClick={() => { setSelectedStudentId(student.id); setSelectedLesson(1); }}><span><strong>{student.full_name}</strong><small>{student.email || student.serial_number}</small></span>{studentPending > 0 && <i>{studentPending}</i>}</button>;
             })}
           </aside>
