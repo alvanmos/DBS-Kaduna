@@ -105,3 +105,33 @@ The supplied screenshot was available. The browser-rendered login page at `http:
 4. Update this QA entry with comparison evidence and a final pass/fail decision.
 
 final result: blocked
+
+## Instructor Messages Workspace QA — 2026-08-12
+
+- Source visual truth: `C:\Users\BTC\AppData\Local\Temp\codex-clipboard-075c98e2-a600-4fc1-8f52-c099ce48dd24.png`
+- Intended implementation route: `http://127.0.0.1:4173/instructor`
+- Intended state: authenticated instructor, at least one assigned student, with both student and administrator conversation histories.
+- Source dimensions / density: supplied desktop screenshot, `1920 x 1080` pixels; browser chrome is excluded from the target content region.
+- Implementation screenshot: unavailable. The local preview was opened at `/login/instructor` and loaded its login controls successfully, but no instructor test session was available to render the Messages workspace.
+
+**Findings**
+
+- [P1] Authenticated conversation-state visual comparison is unavailable.
+  Location: Instructor dashboard → Messages.
+  Evidence: the local route redirects to the protected instructor login screen before conversations can render.
+  Impact: the final desktop and mobile composition, message-card density, and compose controls cannot be compared directly against the supplied screenshot.
+  Fix: sign in with a safe test instructor account, capture the Messages page with a selected student, then compare the workspace and a narrow viewport before release.
+
+**Implemented Design Changes**
+
+- Gave Messages a dedicated wide two-column layout: student selector plus focused conversation workspace.
+- Kept the student and administrator conversations visibly distinct, with compact headers, clearer contact details, larger threads, and full-width compose actions.
+- Moved the supplementary secure calls/meetings tool below the primary messaging workflows.
+- Added responsive collapse behavior for the student selector, conversation cards, and contact details.
+
+**Fidelity Surface Status**
+
+- Typography, spacing/layout rhythm, colors/tokens, app copy, and icon presentation were updated from the supplied screenshot’s DBS Kaduna design language; final rendered comparison is blocked pending authentication.
+- No new raster or custom image asset was introduced.
+
+final result: blocked

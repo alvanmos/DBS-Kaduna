@@ -974,6 +974,23 @@
   gap: 20px;
 }
 
+.portal-teacher-layout--messages {
+  grid-template-columns: minmax(270px, 310px) minmax(0, 1fr);
+}
+
+.portal-teacher-layout--messages > .portal-teacher-workspace {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.portal-teacher-layout--messages .portal-conversation-grid {
+  margin: 0;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  align-items: start;
+}
+
 .portal-details-layout {
   margin-bottom: 20px;
 }
@@ -1050,6 +1067,113 @@
   background: #f7d577;
   border-radius: 16px;
   box-shadow: 0 10px 20px rgb(2 28 74 / 22%);
+}
+
+.portal-message-student-list {
+  position: sticky;
+  top: 20px;
+  max-height: calc(100vh - 132px);
+  padding: 0;
+  overflow: hidden auto;
+  border-color: #d4e1ec;
+}
+
+.portal-message-student-list > .portal-panel-heading {
+  padding: 20px 20px 15px;
+  border-bottom: 1px solid #e4ebf2;
+}
+
+.portal-message-student-list > .portal-panel-heading p {
+  color: var(--portal-green);
+}
+
+.portal-message-student-list .portal-student-list {
+  margin: 0;
+  padding: 12px;
+}
+
+.portal-message-student-list .portal-student-list > button {
+  min-height: 64px;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.portal-message-student-list .portal-student-list > button.is-active {
+  color: var(--portal-navy);
+  background: #edf6ff;
+  border-color: #69a9ea;
+  box-shadow: inset 4px 0 0 var(--portal-blue);
+}
+
+.portal-instructor-message-panel {
+  overflow: hidden;
+  padding: 0;
+  border-color: #d4e1ec;
+  box-shadow: 0 10px 24px rgb(7 28 69 / 5%);
+}
+
+.portal-instructor-message-panel__heading {
+  min-height: 118px;
+  padding: 20px 22px;
+  color: var(--portal-navy);
+  background: #ffffff;
+  border-bottom: 1px solid #dfe8f0;
+}
+
+.portal-instructor-message-panel__heading h2 {
+  max-width: 330px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portal-instructor-message-panel__heading > div > p {
+  color: var(--portal-blue);
+}
+
+.portal-instructor-message-panel__heading > svg {
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  color: var(--portal-blue);
+  background: #e6f1fd;
+  border-radius: 13px;
+}
+
+.portal-instructor-message-panel--admin .portal-instructor-message-panel__heading > div > p {
+  color: var(--portal-green);
+}
+
+.portal-instructor-message-panel--admin .portal-instructor-message-panel__heading > svg {
+  color: var(--portal-green);
+  background: #e8f6ed;
+}
+
+.portal-instructor-message-panel .portal-student-contact-card {
+  margin: 0;
+  padding: 14px 18px;
+  background: #f8fbfe;
+  border-width: 0 0 1px;
+  border-radius: 0;
+}
+
+.portal-instructor-message-panel .portal-student-contact-card > p {
+  margin-bottom: 9px;
+}
+
+.portal-instructor-message-panel .portal-student-contact-card > div {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 14px;
+}
+
+.portal-instructor-message-panel .portal-student-contact-card span {
+  padding-right: 10px;
+  border-right: 1px solid #dfe8f0;
+}
+
+.portal-instructor-message-panel .portal-student-contact-card span:last-child {
+  padding-right: 0;
+  border-right: 0;
 }
 
 .portal-lesson-list,
@@ -1487,14 +1611,17 @@
 }
 
 .portal-message-thread {
-  max-height: 390px;
-  padding: 16px;
+  min-height: 250px;
+  max-height: 420px;
+  margin: 0;
+  padding: 18px;
   display: grid;
   gap: 10px;
   overflow-y: auto;
-  background: linear-gradient(135deg, #f5f9fe, #fbfdfc 52%, #f7fbf8);
+  background: #f7f9fc;
   border: 1px solid #dce7f0;
-  border-radius: 12px;
+  border-width: 0 0 1px;
+  border-radius: 0;
   scrollbar-color: #9cb8d7 transparent;
   scrollbar-width: thin;
 }
@@ -1557,22 +1684,23 @@
   font-size: 0.64rem;
   font-weight: 800;
 }
-}
 
 .portal-message-card {
   max-width: 88%;
   padding: 12px 13px;
   color: #384b68;
-  background: #f8fafc;
+  background: #ffffff;
   border: 1px solid #dde5ee;
-  border-radius: 12px;
+  border-radius: 6px 13px 13px;
+  box-shadow: 0 3px 8px rgb(7 28 69 / 4%);
 }
 
 .portal-message-card--own {
   margin-left: auto;
   color: #ffffff;
-  background: linear-gradient(135deg, var(--portal-blue), var(--portal-navy));
+  background: var(--portal-navy);
   border-color: transparent;
+  border-radius: 13px 6px 13px 13px;
 }
 
 .portal-message-card strong,
@@ -1596,8 +1724,8 @@
 }
 
 .portal-message-form {
-  margin-top: 20px;
-  padding: 20px clamp(20px, 3vw, 34px) clamp(22px, 3vw, 30px);
+  margin-top: 0;
+  padding: 18px 20px 20px;
   display: grid;
   gap: 10px;
   background: #fff;
@@ -1626,6 +1754,7 @@
 
 .portal-message-form textarea {
   min-height: 104px;
+  padding: 12px 13px;
   border-color: #c7d8e9;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 78%);
 }
@@ -1633,6 +1762,16 @@
 .portal-message-form textarea:focus {
   border-color: var(--portal-blue);
   outline: 3px solid rgb(12 77 162 / 14%);
+}
+
+.portal-message-form .portal-primary-button {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+}
+
+.portal-message-communication-tools {
+  margin-top: 24px;
 }
 
 .portal-feedback {
@@ -2127,6 +2266,30 @@
   .portal-support-layout,
   .portal-conversation-grid {
     grid-template-columns: 1fr;
+  }
+
+  .portal-teacher-layout--messages .portal-conversation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-message-student-list {
+    position: static;
+    max-height: none;
+  }
+
+  .portal-instructor-message-panel .portal-student-contact-card > div {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-instructor-message-panel .portal-student-contact-card span {
+    padding: 0 0 8px;
+    border-right: 0;
+    border-bottom: 1px solid #dfe8f0;
+  }
+
+  .portal-instructor-message-panel .portal-student-contact-card span:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
   }
 
   .portal-lesson-list {
