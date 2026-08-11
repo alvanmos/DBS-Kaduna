@@ -338,12 +338,10 @@ export function InstructorDashboard({ profile, onSignOut }) {
         </section>
         </>}
 
-        {activeSection === "messages" && <CommunicationHub role="instructor" />}
-
         {activeSection === "classes" && <ZoomClasses role="instructor" lessons={data.lessons} students={data.students} />}
 
-        {(activeSection === "reviews" || activeSection === "messages") && <div className="portal-teacher-layout">
-          <aside className="portal-panel portal-student-list">
+        {(activeSection === "reviews" || activeSection === "messages") && <div className={activeSection === "messages" ? "portal-teacher-layout portal-teacher-layout--messages" : "portal-teacher-layout"}>
+          <aside className={activeSection === "messages" ? "portal-panel portal-student-list portal-message-student-list" : "portal-panel portal-student-list"}>
             <div className="portal-panel-heading"><div><p>Your class</p><h2>Assigned students</h2></div></div>
             {data.students.length === 0 ? <div className="portal-empty">No students are assigned yet.</div> : data.students.map((student) => {
               const studentPending = data.submissions.filter(
@@ -418,8 +416,8 @@ export function InstructorDashboard({ profile, onSignOut }) {
                 </>}
 
                 {activeSection === "messages" && <div className="portal-conversation-grid">
-                  <section className="portal-panel">
-                    <div className="portal-panel-heading">
+                  <section className="portal-panel portal-instructor-message-panel portal-instructor-message-panel--student">
+                    <div className="portal-panel-heading portal-instructor-message-panel__heading">
                       <div>
                         <p>Student conversation</p>
                         <h2>Message {selectedStudent.full_name}</h2>
@@ -449,7 +447,11 @@ export function InstructorDashboard({ profile, onSignOut }) {
                         );
                       })}
                     </div>
-                    <form className="portal-message-form" onSubmit={sendStudentNote}>
+                    <form className="portal-message-form portal-message-form--student" onSubmit={sendStudentNote}>
+                      <div className="portal-message-compose-heading">
+                        <p>New message</p>
+                        <span>Send a private lesson update or encouragement to {selectedStudent.full_name}.</span>
+                      </div>
                       <label>
                         <span className="sr-only">Message student</span>
                         <textarea
@@ -478,8 +480,8 @@ export function InstructorDashboard({ profile, onSignOut }) {
                     </form>
                   </section>
 
-                  <section className="portal-panel">
-                    <div className="portal-panel-heading">
+                  <section className="portal-panel portal-instructor-message-panel portal-instructor-message-panel--admin">
+                    <div className="portal-panel-heading portal-instructor-message-panel__heading">
                       <div>
                         <p>Administrator conversation</p>
                         <h2>{primaryAdmin?.full_name ?? "DBS Kaduna admin"}</h2>
@@ -509,7 +511,11 @@ export function InstructorDashboard({ profile, onSignOut }) {
                         );
                       })}
                     </div>
-                    <form className="portal-message-form" onSubmit={sendAdminNote}>
+                    <form className="portal-message-form portal-message-form--admin" onSubmit={sendAdminNote}>
+                      <div className="portal-message-compose-heading">
+                        <p>New message</p>
+                        <span>Send a private support or coordination note to DBS Kaduna administration.</span>
+                      </div>
                       <label>
                         <span className="sr-only">Message administrator</span>
                         <textarea
@@ -542,6 +548,8 @@ export function InstructorDashboard({ profile, onSignOut }) {
             )}
           </section>
         </div>}
+
+        {activeSection === "messages" && <section className="portal-message-communication-tools"><CommunicationHub role="instructor" /></section>}
       </main>
       </div>
     </div>
