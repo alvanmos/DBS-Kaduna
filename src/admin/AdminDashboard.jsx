@@ -887,9 +887,10 @@ function InstructorManagement({
           )}
         </section>
 
-        <section className="admin-panel">
+        <section className="admin-panel admin-message-panel">
           <div className="admin-panel-heading">
             <div>
+              <p className="admin-message-eyebrow">Volunteer instructor</p>
               <h3>{selectedThreadInstructor?.name ?? "Administrator thread"}</h3>
               <p>
                 {selectedThreadInstructor
@@ -902,9 +903,15 @@ function InstructorManagement({
             <EmptyState>The selected message thread will appear here.</EmptyState>
           ) : (
             <>
-              <div className="admin-message-thread">
+              <div className="admin-message-thread" role="log" aria-label={`Messages with ${selectedThreadInstructor.name}`}>
                 {instructorMessages.length === 0 ? (
-                  <EmptyState>No messages yet in this instructor thread.</EmptyState>
+                  <div className="admin-message-empty">
+                    <span><PaperPlaneTilt aria-hidden="true" size={22} weight="duotone" /></span>
+                    <div>
+                      <strong>Start the conversation</strong>
+                      <p>No messages yet in this instructor thread. Share an update, answer a question, or offer support below.</p>
+                    </div>
+                  </div>
                 ) : instructorMessages.map((threadMessage) => {
                   const isOwnMessage = threadMessage.sender_profile_id === adminProfileId;
                   return (
@@ -924,8 +931,14 @@ function InstructorManagement({
                 })}
               </div>
               <form className="admin-message-form" onSubmit={sendInstructorMessage}>
-                <label className="admin-form-grid__wide">
-                  Message
+                <div className="admin-message-compose-heading">
+                  <div>
+                    <p>New message</p>
+                    <span>Your reply is shared privately with this volunteer instructor.</span>
+                  </div>
+                </div>
+                <label className="admin-message-field">
+                  <span>Message</span>
                   <textarea
                     rows="4"
                     value={messageDraft}
