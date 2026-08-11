@@ -67,3 +67,41 @@ scrolled mobile capture shows the full Guide 16 title.
 - No page overflow, error overlays, or browser console errors were found.
 
 final result: passed
+
+## Admin Instructor Message Thread QA — 2026-08-11
+
+- Source visual truth: `C:\Users\BTC\AppData\Local\Temp\codex-clipboard-9c33aa66-1874-4a4f-8251-cbca4afd0390.png`
+- Intended implementation route: `http://127.0.0.1:4173/admin`
+- Intended state: an authenticated administrator has selected an approved instructor; the message thread is empty.
+- Intended viewport: desktop, matching the supplied screenshot (approximately `716 x 540` content capture).
+- Source dimensions / density: supplied screenshot, `716 x 540` pixels; CSS dimensions and density unavailable.
+- Implementation screenshot: unavailable — the unauthenticated preview correctly redirects to `/login/admin`, and no administrator test credentials or authenticated browser state were supplied.
+
+**Comparison Evidence**
+
+The supplied screenshot was available. The browser-rendered login page at `http://127.0.0.1:4173/login/admin` was opened and confirmed to load, but the authenticated instructor-message state could not be captured. A like-for-like full-view or focused-region comparison was therefore not possible.
+
+**Findings**
+
+- [P1] Authenticated message-state capture is unavailable.
+  Location: `/admin`, Instructor management message workspace.
+  Evidence: the implementation requires valid administrator authentication before an instructor thread can render.
+  Impact: visual fidelity, responsive behavior, and message-submission interaction cannot be verified in the target state.
+  Fix: provide a safe test administrator session or capture the authenticated workspace in the in-app browser, then compare it with the supplied empty-state screenshot.
+
+**Fidelity Surface Status**
+
+- Fonts and typography: blocked pending an authenticated rendered capture.
+- Spacing and layout rhythm: blocked pending an authenticated rendered capture.
+- Colors and visual tokens: source uses DBS navy, blue, white, and muted gray; implementation capture is blocked.
+- Image quality and asset fidelity: no custom raster asset is required for this message workspace; the supplied source contains no image asset to recreate.
+- Copy and content: implementation copy was updated for the empty state and private-message composer; visual verification is blocked.
+
+**Implementation Checklist**
+
+1. Open the authenticated `/admin` message workspace with an approved instructor selected.
+2. Capture desktop and narrow-width empty states, plus a populated conversation state.
+3. Check the full-width composer, visible focus ring, submit state, and horizontal overflow.
+4. Update this QA entry with comparison evidence and a final pass/fail decision.
+
+final result: blocked
