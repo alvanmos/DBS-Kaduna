@@ -19,9 +19,11 @@ function templateValues(queue, recipient) { const payload = queue.event_payload 
 function absoluteLink(value) { if (!value) return appUrl(); return /^https?:\/\//.test(value) ? value : `${appUrl()}${value.startsWith("/") ? "" : "/"}${value}`; }
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed." });
-  const workerSecret = process.env.NOTIFICATION_WORKER_SECRET || process.env.CRON_SECRET;
-  if (!workerSecret || req.headers.authorization !== `Bearer ${workerSecret}`) return res.status(401).json({ error: "Unauthorized." });
+  if (!["GET", "POST"].includes(req.method)) return res.status(405).json({ error: "Method not allowed." });
+  const authorization = req.headers.authorization;
+  const isWorkerRequest = Boolean(process.env.NOTIFICATION_WORKER_SECRET) && authorization === `Bearer ${process.env.NOTIFICATION_WORKER_SECRET}`;
+  const isCronRequest = Boolean(process.env.CRON_SECRET) && authorization === `Bearer ${process.env.CRON_SECRET}`;
+  if (!isWorkerRequest && !isCronRequest) return res.status(401).json({ error: "Unauthorized." });
   if (!process.env.RESEND_API_KEY || process.env.DISCOVER_BIBLE_SCHOOL_EMAIL_ENABLED !== "true") return res.status(503).json({ error: "Automated email delivery is disabled." });
   const supabase = serviceClient();
   const { data: queue, error } = await supabase.rpc("email_claim_notification_queue", { input_limit: MAX_ITEMS });
