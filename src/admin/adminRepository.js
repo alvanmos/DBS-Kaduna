@@ -178,7 +178,7 @@ async function loadRecruitmentData() {
 function accountActivityStatus(profile, storedStatus) {
   if (storedStatus === "inactive") return "Inactive";
   const lastActivity = new Date(profile?.last_activity_at ?? 0).getTime();
-  return Date.now() - lastActivity >= 30 * 24 * 60 * 60 * 1000
+  return Date.now() - lastActivity >= 60 * 24 * 60 * 60 * 1000
     ? "Inactive"
     : "Active";
 }
