@@ -9,10 +9,6 @@
   },
   "crons": [
     {
-      "path": "/api/students/process-inactivity",
-      "schedule": "0 7 * * *"
-    },
-    {
       "path": "/api/notifications/process",
       "schedule": "0 8 * * *"
     }

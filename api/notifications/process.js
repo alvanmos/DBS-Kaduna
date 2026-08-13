@@ -24,8 +24,10 @@ export default async function handler(req, res) {
   const isWorkerRequest = Boolean(process.env.NOTIFICATION_WORKER_SECRET) && authorization === `Bearer ${process.env.NOTIFICATION_WORKER_SECRET}`;
   const isCronRequest = Boolean(process.env.CRON_SECRET) && authorization === `Bearer ${process.env.CRON_SECRET}`;
   if (!isWorkerRequest && !isCronRequest) return res.status(401).json({ error: "Unauthorized." });
-  if (!process.env.RESEND_API_KEY || process.env.DISCOVER_BIBLE_SCHOOL_EMAIL_ENABLED !== "true") return res.status(503).json({ error: "Automated email delivery is disabled." });
   const supabase = serviceClient();
+  const { data: inactivated, error: inactivityError } = await supabase.rpc("process_student_inactivity", { input_inactivity_days: 60 });
+  if (inactivityError) return res.status(500).json({ error: inactivityError.message });
+  if (!process.env.RESEND_API_KEY || process.env.DISCOVER_BIBLE_SCHOOL_EMAIL_ENABLED !== "true") return res.status(503).json({ error: "Automated email delivery is disabled.", inactivated: inactivated?.length ?? 0 });
   const { data: queue, error } = await supabase.rpc("email_claim_notification_queue", { input_limit: MAX_ITEMS });
   if (error) return res.status(500).json({ error: error.message });
   const results = [];
@@ -56,5 +58,5 @@ export default async function handler(req, res) {
       results.push({ id: item.id, status: retry ? "retrying" : "failed" });
     }
   }
-  return res.status(200).json({ processed: results.length, results });
+  return res.status(200).json({ inactivated: inactivated?.length ?? 0, processed: results.length, results });
 }

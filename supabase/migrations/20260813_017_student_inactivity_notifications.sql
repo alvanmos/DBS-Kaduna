@@ -87,7 +87,7 @@ begin
       jsonb_build_object(
         'student_full_name', coalesce(candidate.full_name, ''),
         'dashboard_link', '/login/student',
-        'reactivation_link', '/api/students/reactivate?token=' || raw_token
+        'reactivation_link', '/api/register?reactivate=' || raw_token
       )
     );
     inactivated_student_id := candidate.student_id;
