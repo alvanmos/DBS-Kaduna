@@ -37,7 +37,7 @@ function friendlyError(error) {
   return error.message || "Authentication could not be completed.";
 }
 
-function RoleLogin({ role, mode, message, onSignIn, onSetPassword, onReset }) {
+function RoleLogin({ role, mode, message, reactivationNotice, onSignIn, onSetPassword, onReset }) {
   const config = roleConfig[role];
   const Icon = config.Icon;
   const [identity, setIdentity] = useState("");
@@ -105,6 +105,7 @@ function RoleLogin({ role, mode, message, onSignIn, onSetPassword, onReset }) {
             : `Sign in to your ${config.label.toLowerCase()} learning dashboard with your username and password.`}
         </span>
         {!isUnavailable && <form onSubmit={submit}>
+          {reactivationNotice && <div className={`portal-auth-message ${reactivationNotice === "success" ? "is-success" : "is-error"}`}><CheckCircle aria-hidden="true" size={20} />{reactivationNotice === "success" ? "Your account is active again. You can sign in below." : "This reactivation link has expired or has already been used. Please sign in or contact DBS Kaduna support."}</div>}
           {!isSetup && (
             <label>
               Username or email
@@ -134,6 +135,7 @@ function RoleLogin({ role, mode, message, onSignIn, onSetPassword, onReset }) {
 export function LearningPortal({ role }) {
   const config = roleConfig[role];
   const initialFlow = getAuthFlowType();
+  const reactivationState = new URLSearchParams(window.location.search).get("reactivated");
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [status, setStatus] = useState(
@@ -251,6 +253,15 @@ export function LearningPortal({ role }) {
         role={role}
         mode={status}
         message={status === "configuration-error" ? "Secure login is not configured." : message}
+        reactivationNotice={
+          role === "student"
+            ? reactivationState === "1"
+              ? "success"
+              : reactivationState === "invalid"
+                ? "invalid"
+                : ""
+            : ""
+        }
         onSignIn={signIn}
         onSetPassword={setPassword}
         onReset={resetPassword}
