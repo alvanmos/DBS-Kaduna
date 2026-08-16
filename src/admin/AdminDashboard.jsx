@@ -152,8 +152,11 @@ function exportLessonAnswersWord({ student, lesson, submissions, questions }) {
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = `${safeDownloadName(student.name)}-lesson-${lesson.number}-answers.doc`;
+  anchor.style.display = "none";
+  document.body.append(anchor);
   anchor.click();
-  URL.revokeObjectURL(url);
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
 }
 
 function StatusBadge({ children, tone = "neutral" }) {
