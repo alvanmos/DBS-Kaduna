@@ -105,6 +105,57 @@ function exportExcelFile(fileName, title, columns, rows) {
   URL.revokeObjectURL(url);
 }
 
+function answerText(answer) {
+  if (answer === null || answer === undefined) return "";
+  if (typeof answer === "string") return answer;
+  if (typeof answer === "number" || typeof answer === "boolean") return String(answer);
+  if (Array.isArray(answer)) return answer.map(answerText).filter(Boolean).join(", ");
+  if (typeof answer === "object") {
+    return Object.entries(answer)
+      .map(([key, value]) => `${key.replaceAll("_", " ")}: ${answerText(value)}`)
+      .join("\n");
+  }
+  return String(answer);
+}
+
+function safeDownloadName(value) {
+  return String(value ?? "dbs-kaduna")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function exportLessonAnswersWord({ student, lesson, submissions, questions }) {
+  const questionsById = new Map(questions.map((question) => [question.id, question]));
+  const submittedAt = submissions
+    .map((submission) => submission.submittedAt)
+    .filter(Boolean)
+    .sort()
+    .at(-1);
+  const answers = submissions
+    .map((submission, index) => {
+      const question = questionsById.get(submission.questionId);
+      if (!question) return "";
+      const score = submission.score === null || submission.score === undefined
+        ? ""
+        : `<p class="meta"><strong>Score:</strong> ${escapeCell(submission.score)}</p>`;
+      const feedback = submission.feedback
+        ? `<p class="meta"><strong>Instructor feedback:</strong> ${escapeCell(submission.feedback)}</p>`
+        : "";
+      return `<section><h2>Question ${index + 1}</h2><p class="question">${escapeCell(question.prompt)}</p><p class="label">Student answer</p><p class="answer">${escapeCell(answerText(submission.answer)).replaceAll("\n", "<br>")}</p>${score}${feedback}</section>`;
+    })
+    .filter(Boolean)
+    .join("");
+  const document = `<!doctype html><html><head><meta charset="UTF-8"><style>body{font-family:Calibri,Arial,sans-serif;color:#172b4d;line-height:1.5;margin:36pt}h1{color:#072c54;margin-bottom:4pt}h2{color:#107e58;font-size:14pt;margin:22pt 0 6pt}.meta{color:#526475;margin:3pt 0}.question{font-weight:700;margin:0 0 8pt}.label{color:#8a6500;font-size:9pt;font-weight:700;text-transform:uppercase;margin:0}.answer{white-space:normal;border-left:3pt solid #d2af55;padding-left:12pt;margin-top:4pt}section{page-break-inside:avoid}</style></head><body><h1>DBS Kaduna — Lesson ${escapeCell(lesson.number)} Answers</h1><p class="meta"><strong>Student:</strong> ${escapeCell(student.name)}<br><strong>Serial:</strong> ${escapeCell(student.serial)}<br><strong>Lesson:</strong> ${escapeCell(lesson.title)}${submittedAt ? `<br><strong>Latest submission:</strong> ${escapeCell(new Date(submittedAt).toLocaleString())}` : ""}</p>${answers}</body></html>`;
+  const blob = new Blob([document], { type: "application/msword" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `${safeDownloadName(student.name)}-lesson-${lesson.number}-answers.doc`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 function StatusBadge({ children, tone = "neutral" }) {
   return <span className={`admin-status admin-status--${tone}`}>{children}</span>;
 }
@@ -323,6 +374,9 @@ function DashboardSummary({ students, instructors }) {
 function StudentManagement({
   students,
   instructors,
+  lessons,
+  questions,
+  submissions,
   onAssignStudent,
   onDeleteAccount,
   onNotify,
@@ -338,6 +392,23 @@ function StudentManagement({
   );
   const selectedStudent =
     students.find((student) => student.id === selectedStudentId) ?? students[0];
+  const questionsById = new Map(questions.map((question) => [question.id, question]));
+  const submittedLessons = lessons
+    .map((lesson) => ({
+      lesson,
+      submissions: submissions
+        .filter((submission) =>
+          submission.studentId === selectedStudent?.id &&
+          submission.status !== "draft" &&
+          questionsById.get(submission.questionId)?.lesson === lesson.number,
+        )
+        .sort(
+          (first, second) =>
+            (questionsById.get(first.questionId)?.order ?? 0) -
+            (questionsById.get(second.questionId)?.order ?? 0),
+        ),
+    }))
+    .filter(({ submissions: lessonSubmissions }) => lessonSubmissions.length > 0);
 
   async function assignInstructor(studentId, instructorId) {
     try {
@@ -608,6 +679,38 @@ function StudentManagement({
           )}
         </section>
       </div>
+
+      <section className="admin-panel admin-lesson-answers">
+        <div className="admin-panel-heading">
+          <div>
+            <h3>Submitted lesson answers</h3>
+            <p>Download each submitted lesson as a Microsoft Word document.</p>
+          </div>
+          <StatusBadge tone="blue">{submittedLessons.length} lessons</StatusBadge>
+        </div>
+        {selectedStudent && submittedLessons.length ? (
+          <div className="admin-lesson-answer-downloads">
+            {submittedLessons.map(({ lesson, submissions: lessonSubmissions }) => (
+              <article key={lesson.id}>
+                <div>
+                  <strong>Lesson {lesson.number}: {lesson.title}</strong>
+                  <small>{lessonSubmissions.length} submitted answer{lessonSubmissions.length === 1 ? "" : "s"}</small>
+                </div>
+                <button
+                  className="admin-secondary-button"
+                  type="button"
+                  onClick={() => exportLessonAnswersWord({ student: selectedStudent, lesson, submissions: lessonSubmissions, questions })}
+                >
+                  <DownloadSimple aria-hidden="true" size={18} />
+                  Download Word
+                </button>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <EmptyState>This student has not submitted any lesson answers yet.</EmptyState>
+        )}
+      </section>
     </>
   );
 }
@@ -2403,6 +2506,9 @@ export function AdminDashboard({
       <StudentManagement
         students={data.students}
         instructors={data.instructors}
+        lessons={data.lessons}
+        questions={data.questions}
+        submissions={data.submissions}
         onAssignStudent={actions.assignStudent}
         onDeleteAccount={actions.deleteAccount}
         onNotify={notify}

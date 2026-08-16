@@ -5,6 +5,7 @@ const emptyData = {
   instructors: [],
   lessons: [],
   questions: [],
+  submissions: [],
   certificates: [],
   recruitmentCampaigns: [],
   recruitmentEnrolments: [],
@@ -199,7 +200,7 @@ export async function loadAdminData() {
     supabase.from("student_lesson_progress").select("*"),
     supabase
       .from("submissions")
-      .select("student_id, question_id, marker_instructor_id, status"),
+      .select("id, student_id, question_id, answer, status, submitted_at, score, feedback, marker_instructor_id"),
     supabase
       .from("graduation_requests")
       .select("student_id, requested_by_instructor_id, status"),
@@ -388,6 +389,17 @@ export async function loadAdminData() {
     prompt: question.prompt,
   }));
 
+  const mappedSubmissions = submissions.map((submission) => ({
+    id: submission.id,
+    studentId: submission.student_id,
+    questionId: submission.question_id,
+    answer: submission.answer,
+    status: submission.status,
+    submittedAt: submission.submitted_at,
+    score: submission.score,
+    feedback: submission.feedback,
+  }));
+
   const mappedCertificates = certificates.map((certificate) => ({
     id: certificate.id,
     studentId: certificate.student_id,
@@ -452,6 +464,7 @@ export async function loadAdminData() {
     ],
     lessons: mappedLessons,
     questions: mappedQuestions,
+    submissions: mappedSubmissions,
     certificates: mappedCertificates,
     recruitmentCampaigns: mappedRecruitmentCampaigns,
     recruitmentEnrolments: mappedRecruitmentEnrolments,
