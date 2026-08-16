@@ -146,14 +146,17 @@ function exportLessonAnswersWord({ student, lesson, submissions, questions }) {
     })
     .filter(Boolean)
     .join("");
-  const document = `<!doctype html><html><head><meta charset="UTF-8"><style>body{font-family:Calibri,Arial,sans-serif;color:#172b4d;line-height:1.5;margin:36pt}h1{color:#072c54;margin-bottom:4pt}h2{color:#107e58;font-size:14pt;margin:22pt 0 6pt}.meta{color:#526475;margin:3pt 0}.question{font-weight:700;margin:0 0 8pt}.label{color:#8a6500;font-size:9pt;font-weight:700;text-transform:uppercase;margin:0}.answer{white-space:normal;border-left:3pt solid #d2af55;padding-left:12pt;margin-top:4pt}section{page-break-inside:avoid}</style></head><body><h1>DBS Kaduna — Lesson ${escapeCell(lesson.number)} Answers</h1><p class="meta"><strong>Student:</strong> ${escapeCell(student.name)}<br><strong>Serial:</strong> ${escapeCell(student.serial)}<br><strong>Lesson:</strong> ${escapeCell(lesson.title)}${submittedAt ? `<br><strong>Latest submission:</strong> ${escapeCell(new Date(submittedAt).toLocaleString())}` : ""}</p>${answers}</body></html>`;
-  const blob = new Blob([document], { type: "application/msword" });
+  const wordDocument = `<!doctype html><html><head><meta charset="UTF-8"><style>body{font-family:Calibri,Arial,sans-serif;color:#172b4d;line-height:1.5;margin:36pt}h1{color:#072c54;margin-bottom:4pt}h2{color:#107e58;font-size:14pt;margin:22pt 0 6pt}.meta{color:#526475;margin:3pt 0}.question{font-weight:700;margin:0 0 8pt}.label{color:#8a6500;font-size:9pt;font-weight:700;text-transform:uppercase;margin:0}.answer{white-space:normal;border-left:3pt solid #d2af55;padding-left:12pt;margin-top:4pt}section{page-break-inside:avoid}</style></head><body><h1>DBS Kaduna — Lesson ${escapeCell(lesson.number)} Answers</h1><p class="meta"><strong>Student:</strong> ${escapeCell(student.name)}<br><strong>Serial:</strong> ${escapeCell(student.serial)}<br><strong>Lesson:</strong> ${escapeCell(lesson.title)}${submittedAt ? `<br><strong>Latest submission:</strong> ${escapeCell(new Date(submittedAt).toLocaleString())}` : ""}</p>${answers}</body></html>`;
+  const blob = new Blob([wordDocument], { type: "application/msword" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = `${safeDownloadName(student.name)}-lesson-${lesson.number}-answers.doc`;
+  anchor.style.display = "none";
+  document.body.append(anchor);
   anchor.click();
-  URL.revokeObjectURL(url);
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
 }
 
 function StatusBadge({ children, tone = "neutral" }) {
