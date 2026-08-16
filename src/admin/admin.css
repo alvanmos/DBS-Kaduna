@@ -765,6 +765,40 @@
   grid-template-columns: 0.82fr 1.18fr;
 }
 
+.admin-lesson-answers {
+  margin-top: 20px;
+}
+
+.admin-lesson-answer-downloads {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-lesson-answer-downloads article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  background: var(--admin-green-soft);
+}
+
+.admin-lesson-answer-downloads strong,
+.admin-lesson-answer-downloads small {
+  display: block;
+}
+
+.admin-lesson-answer-downloads strong {
+  color: var(--admin-navy);
+}
+
+.admin-lesson-answer-downloads small {
+  margin-top: 3px;
+  color: var(--admin-muted);
+}
+
 .admin-two-column--messages {
   margin-top: 20px;
 }
