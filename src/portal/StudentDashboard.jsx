@@ -164,6 +164,7 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
   const [activeSection, setActiveSection] = useState("overview");
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [isCurrentLessonMenuOpen, setIsCurrentLessonMenuOpen] = useState(false);
 
   async function refresh() {
     try {
@@ -226,6 +227,11 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
 
   const currentLesson = data.lessons.find((lesson) => lesson.number === selectedLesson);
   const currentStatus = lessonStatus(data.progress, selectedLesson);
+  const availableLesson = data.lessons.find((lesson) =>
+    ["available", "in_progress", "returned"].includes(
+      lessonStatus(data.progress, lesson.number),
+    ),
+  );
   const completedCount = data.progress.filter((item) => item.status === "completed").length;
   const progressPercentage = Math.round((completedCount / 26) * 100);
   const canAnswer = ["available", "in_progress", "returned"].includes(currentStatus);
@@ -372,6 +378,58 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
             <div className="portal-progress-card"><strong>{progressPercentage}%</strong><span>{completedCount} of 26 lessons completed</span><div><i style={{ width: `${progressPercentage}%` }} /></div></div>
           </div>
         </section>
+
+        {availableLesson && (
+          <section
+            className={
+              isCurrentLessonMenuOpen
+                ? "portal-current-lesson portal-current-lesson--open"
+                : "portal-current-lesson"
+            }
+            onMouseEnter={() => setIsCurrentLessonMenuOpen(true)}
+            onMouseLeave={() => setIsCurrentLessonMenuOpen(false)}
+            onFocus={() => setIsCurrentLessonMenuOpen(true)}
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) {
+                setIsCurrentLessonMenuOpen(false);
+              }
+            }}
+          >
+            <button
+              className="portal-current-lesson__trigger"
+              type="button"
+              aria-expanded={isCurrentLessonMenuOpen}
+              aria-controls="current-lesson-actions"
+              onClick={() => setIsCurrentLessonMenuOpen((isOpen) => !isOpen)}
+            >
+              <span className="portal-current-lesson__icon"><BookOpenText aria-hidden="true" size={27} weight="fill" /></span>
+              <span className="portal-current-lesson__copy">
+                <small>Current available lesson</small>
+                <strong>Lesson {availableLesson.number}: {availableLesson.title}</strong>
+                <em>Hover or click to choose how to study</em>
+              </span>
+              <ArrowDown className="portal-current-lesson__caret" aria-hidden="true" size={22} weight="bold" />
+            </button>
+            <div className="portal-current-lesson__options" id="current-lesson-actions">
+              <button
+                className="portal-secondary-button"
+                type="button"
+                disabled={!availableLesson.storage_path}
+                onClick={() => openLessonPdf(availableLesson.storage_path).catch((error) => setLessonMessage(error.message))}
+              >
+                <FilePdf size={19} />Open Lesson PDF
+              </button>
+              <button
+                className="portal-primary-button"
+                type="button"
+                disabled={!availableLesson.storage_path}
+                onClick={() => downloadLessonPdf(availableLesson.storage_path, availableLesson.original_file_name).catch((error) => setLessonMessage(error.message))}
+              >
+                <DownloadSimple size={19} />Download Lesson
+              </button>
+            </div>
+          </section>
+        )}
 
         <section className="portal-summary-grid">
           <article><span><GraduationCap size={24} /></span><strong>{data.student.serial_number}</strong><small>Student number</small></article>
