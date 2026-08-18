@@ -812,6 +812,129 @@
   background: #61d394;
 }
 
+.portal-current-lesson {
+  position: relative;
+  z-index: 2;
+  margin-bottom: 20px;
+}
+
+.portal-current-lesson__trigger {
+  width: 100%;
+  min-height: 94px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--portal-navy);
+  background: linear-gradient(105deg, #fff0bd, #fff9e6 57%, #ffffff);
+  border: 2px solid #f0a900;
+  border-radius: 14px;
+  box-shadow: 0 0 0 0 rgb(240 169 0 / 48%), 0 10px 24px rgb(153 101 0 / 15%);
+  font: inherit;
+  text-align: left;
+  animation: portal-current-lesson-blink 1.1s steps(2, end) infinite;
+}
+
+.portal-current-lesson__trigger:hover,
+.portal-current-lesson__trigger:focus-visible,
+.portal-current-lesson--open .portal-current-lesson__trigger {
+  background: linear-gradient(105deg, #ffd151, #fff1bc 57%, #ffffff);
+  outline: 3px solid rgb(12 77 162 / 28%);
+  outline-offset: 3px;
+}
+
+.portal-current-lesson--open .portal-current-lesson__trigger {
+  animation: none;
+}
+
+.portal-current-lesson__icon {
+  width: 50px;
+  height: 50px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: #b86b00;
+  border-radius: 12px;
+  box-shadow: 0 5px 12px rgb(123 72 0 / 26%);
+}
+
+.portal-current-lesson__copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.portal-current-lesson__copy small {
+  color: #885300;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.portal-current-lesson__copy strong {
+  overflow: hidden;
+  color: var(--portal-navy);
+  font-size: clamp(0.94rem, 1.7vw, 1.08rem);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portal-current-lesson__copy em {
+  color: #6f5c36;
+  font-size: 0.73rem;
+  font-style: normal;
+}
+
+.portal-current-lesson__caret {
+  margin-left: auto;
+  flex: 0 0 auto;
+  color: #9c5b00;
+  transition: transform 160ms ease;
+}
+
+.portal-current-lesson--open .portal-current-lesson__caret {
+  transform: rotate(180deg);
+}
+
+.portal-current-lesson__options {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 16px;
+  padding: 10px;
+  display: flex;
+  gap: 8px;
+  visibility: hidden;
+  opacity: 0;
+  background: #fff;
+  border: 1px solid #ebc66f;
+  border-radius: 12px;
+  box-shadow: 0 14px 30px rgb(7 28 69 / 18%);
+  transform: translateY(-6px);
+  transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
+}
+
+.portal-current-lesson--open .portal-current-lesson__options {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes portal-current-lesson-blink {
+  0%,
+  49% {
+    border-color: #f0a900;
+    box-shadow: 0 0 0 0 rgb(240 169 0 / 48%), 0 10px 24px rgb(153 101 0 / 15%);
+  }
+
+  50%,
+  100% {
+    border-color: #ff7a00;
+    box-shadow: 0 0 0 8px rgb(255 148 0 / 22%), 0 12px 28px rgb(153 101 0 / 23%);
+  }
+}
+
 .portal-summary-grid {
   margin-bottom: 20px;
   display: grid;
@@ -2357,6 +2480,26 @@
     flex-direction: column;
   }
 
+  .portal-current-lesson__trigger {
+    align-items: flex-start;
+  }
+
+  .portal-current-lesson__copy strong {
+    white-space: normal;
+  }
+
+  .portal-current-lesson__options {
+    position: static;
+    margin-top: 10px;
+    flex-wrap: wrap;
+    transform: none;
+  }
+
+  .portal-current-lesson__options .portal-secondary-button,
+  .portal-current-lesson__options .portal-primary-button {
+    flex: 1 1 180px;
+  }
+
   .portal-summary-grid,
   .portal-teacher-lessons {
     grid-template-columns: 1fr;
@@ -2428,6 +2571,10 @@
   }
 
   .portal-lesson-prompt:not(:disabled) {
+    animation: none;
+  }
+
+  .portal-current-lesson__trigger {
     animation: none;
   }
 }
