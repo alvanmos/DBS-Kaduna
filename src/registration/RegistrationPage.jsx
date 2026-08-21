@@ -306,6 +306,9 @@ export function RegistrationPage({ role }) {
           </span>
           <p>DBS Kaduna registration</p>
           <h1>{title}</h1>
+          {content.kind === "student" && (
+            <strong className="registration-intro__free">It's Totally Free</strong>
+          )}
           <span>{description}</span>
         </div>
 

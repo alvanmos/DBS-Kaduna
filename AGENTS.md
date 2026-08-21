@@ -34,6 +34,7 @@ When implementing from a selected generated mock, treat that image as the source
 ## Recruitment and News Direction
 
 - Keep student and volunteer instructor registration on role-specific shared forms.
+- Feature “It's Totally Free” prominently on the student registration page.
 - Let administrators create named, trackable QR recruitment campaigns for either role.
 - Keep campaign enrollee names, phone numbers, addresses, and export controls visible only in administration.
 - Show the latest published news headline and date as moving text immediately above the homepage title.

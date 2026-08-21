@@ -99,6 +99,21 @@
   line-height: 1.02;
 }
 
+.registration-intro__free {
+  width: fit-content;
+  margin: -4px 0 16px;
+  padding: 7px 12px;
+  display: block;
+  color: #08783d;
+  background: #e7f5ed;
+  border: 1px solid #bfe4ce;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .registration-intro > span:not(.registration-intro__icon) {
   display: block;
   color: #526076;
