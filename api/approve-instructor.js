@@ -57,7 +57,7 @@ export default async function handler(req, res) {
 
     let profileId = registration.profile_id;
     let approvalMessage =
-      "Instructor approved. The registered username and password are now active.";
+      "Instructor approved and secure password-setup invitation sent by email.";
 
     if (profileId) {
       const { data: profile, error: profileError } = await supabase
@@ -68,6 +68,12 @@ export default async function handler(req, res) {
       if (profileError || !profile) {
         throw new Error("The pending instructor profile could not be found.");
       }
+
+      const { error: resetError } =
+        await supabase.auth.resetPasswordForEmail(registration.email, {
+          redirectTo: `${siteUrl()}/login/instructor?type=invite`,
+        });
+      if (resetError) throw resetError;
 
       const { error: activateProfileError } = await supabase
         .from("profiles")
@@ -89,9 +95,6 @@ export default async function handler(req, res) {
       if (invitationError) throw invitationError;
       createdUserId = invitation.user.id;
       profileId = createdUserId;
-      approvalMessage =
-        "Instructor approved and password-setup invitation sent by email.";
-
       const { error: profileError } = await supabase.from("profiles").upsert({
         id: createdUserId,
         email: registration.email,
