@@ -49,7 +49,7 @@ When implementing from a selected generated mock, treat that image as the source
 - Keep student access on `/login/student` and `/student`, and instructor access on `/login/instructor` and `/instructor`.
 - Make the student Online classes workspace equally organized and polished, with a branded hero, concise class summary, clear schedule hierarchy, and responsive composition.
 - Make the student Messages workspace a full-width, polished counterpart to “My details,” with the same branded hero treatment, well-defined conversation area, and responsive composition.
-- Classify accounts with no dashboard activity for 30 days as inactive in administration without deleting their records.
+- Classify student accounts with no dashboard activity for 60 days as inactive without deleting their records, then send a one-time email with a secure account-reactivation link.
 - Student dashboards must show the assigned instructor, all 26 lessons and statuses, online answers, marking feedback, progress, and approved certificate downloads.
 - Keep the student "My details" workspace full-width, with a polished responsive multi-column profile form on larger screens.
 - Present student lesson questions one at a time in a bold, colourful sequence; require each answer to be submitted before revealing the Next Question control.

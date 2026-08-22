@@ -9,6 +9,25 @@ function send(res, status, body) {
   res.status(status).json(body);
 }
 
+function appUrl(req) {
+  return String(
+    process.env.DISCOVER_BIBLE_SCHOOL_APP_URL ||
+      `${req.headers["x-forwarded-proto"] || "https"}://${req.headers.host}`,
+  ).replace(/\/$/, "");
+}
+
+async function reactivateStudent(req, res, supabase) {
+  const token = typeof req.query.reactivate === "string" ? req.query.reactivate : "";
+  const loginUrl = `${appUrl(req)}/login/student`;
+  if (!/^[a-f0-9]{64}$/i.test(token)) {
+    return res.redirect(302, `${loginUrl}?reactivated=invalid`);
+  }
+  const { data, error } = await supabase.rpc("reactivate_student_account", {
+    input_token: token,
+  });
+  return res.redirect(302, `${loginUrl}?reactivated=${!error && data ? "1" : "invalid"}`);
+}
+
 function normalizeUsername(value) {
   return String(value ?? "")
     .trim()
@@ -119,8 +138,8 @@ async function sendWelcomeLetter({ email, fullName, studentId }) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
+  if (!["GET", "POST"].includes(req.method)) {
+    res.setHeader("Allow", "GET, POST");
     return send(res, 405, { error: "Method not allowed." });
   }
 
@@ -129,6 +148,11 @@ export default async function handler(req, res) {
   if (!supabaseUrl || !serviceRoleKey) {
     return send(res, 503, { error: "Registration service is not configured." });
   }
+
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  if (req.method === "GET") return reactivateStudent(req, res, supabase);
 
   const { recruitmentKind, campaignSlug = "", formData = {}, website = "" } =
     req.body ?? {};
@@ -145,9 +169,6 @@ export default async function handler(req, res) {
     });
   }
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
   let createdUserId = null;
   let createdStudentId = null;
 
