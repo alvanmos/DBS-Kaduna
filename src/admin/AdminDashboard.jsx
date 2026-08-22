@@ -2203,7 +2203,7 @@ function RegistrationFormManagement({
             <div className="admin-panel-heading">
               <div>
                 <h3>Form fields</h3>
-                <p>Full name, email, username, password, and privacy consent stay compulsory because they create secure accounts and record permission to process registration data.</p>
+                <p>Full name, email, username, and privacy consent stay compulsory because they create secure accounts and record permission to process registration data. Password setup happens through a secure email link.</p>
               </div>
               <button className="admin-secondary-button" type="button" onClick={addField}>
                 <Plus aria-hidden="true" size={18} />
@@ -2212,7 +2212,7 @@ function RegistrationFormManagement({
             </div>
             <div className="admin-field-builder-list">
               {draft.fields.map((field, index) => {
-                const protectedField = ["full_name", "email", "username", "password", "privacy_consent"].includes(field.key);
+                  const protectedField = ["full_name", "email", "username", "privacy_consent"].includes(field.key);
                 return (
                   <article key={field.key}>
                     <label>
@@ -2232,7 +2232,6 @@ function RegistrationFormManagement({
                       >
                         <option value="text">Short text</option>
                         <option value="email">Email</option>
-                        <option value="password">Password</option>
                         <option value="tel">Phone</option>
                         <option value="textarea">Long text</option>
                         <option value="number">Number</option>

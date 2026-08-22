@@ -55,13 +55,6 @@ const protectedFieldDefinitions = {
     required: true,
     system: true,
   },
-  password: {
-    key: "password",
-    label: "Password",
-    type: "password",
-    required: true,
-    system: true,
-  },
   privacy_consent: {
     key: "privacy_consent",
     label:
@@ -707,7 +700,12 @@ export async function saveRegistrationForm(form) {
       ...protectedFieldDefinitions[key],
     })),
     ...form.fields
-      .filter((field) => !protectedKeys.includes(field.key))
+      .filter(
+        (field) =>
+          field.key !== "password" &&
+          field.type !== "password" &&
+          !protectedKeys.includes(field.key),
+      )
       .map((field) => ({
         ...field,
         required: Boolean(field.required),

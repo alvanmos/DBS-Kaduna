@@ -4,7 +4,6 @@ import {
   CheckCircle,
   EnvelopeSimple,
   GraduationCap,
-  LockKey,
   MapPin,
   Phone,
   User,
@@ -51,7 +50,6 @@ const fallbackFieldsByRole = {
     { key: "full_name", label: "Full name", type: "text", required: true, system: true },
     { key: "email", label: "Email address", type: "email", required: true, system: true },
     { key: "username", label: "Username", type: "text", required: true, system: true },
-    { key: "password", label: "Password", type: "password", required: true, system: true },
     { key: "phone", label: "Phone number", type: "tel", required: true, system: true },
     { key: "address", label: "Residential address", type: "textarea", required: true, system: true },
     { key: "denomination", label: "Denomination", type: "text", required: false },
@@ -66,7 +64,6 @@ const fallbackFieldsByRole = {
     { key: "full_name", label: "Full name", type: "text", required: true, system: true },
     { key: "email", label: "Email address", type: "email", required: true, system: true },
     { key: "username", label: "Username", type: "text", required: true, system: true },
-    { key: "password", label: "Password", type: "password", required: true, system: true },
     { key: "phone", label: "Phone number", type: "tel", required: true, system: true },
     { key: "address", label: "Residential address", type: "textarea", required: true, system: true },
     {
@@ -82,7 +79,6 @@ const fieldIcons = {
   full_name: User,
   email: EnvelopeSimple,
   username: User,
-  password: LockKey,
   phone: Phone,
   address: MapPin,
 };
@@ -96,15 +92,18 @@ function emptyValueFor(field) {
 }
 
 function withConsentField(fields = []) {
-  const hasConsentField = fields.some((field) => field.key === privacyConsentField.key);
+  const passwordlessFields = fields.filter(
+    (field) => field.key !== "password" && field.type !== "password",
+  );
+  const hasConsentField = passwordlessFields.some((field) => field.key === privacyConsentField.key);
   if (hasConsentField) {
-    return fields.map((field) =>
+    return passwordlessFields.map((field) =>
       field.key === privacyConsentField.key
         ? { ...field, ...privacyConsentField }
         : field,
     );
   }
-  return [...fields, privacyConsentField];
+  return [...passwordlessFields, privacyConsentField];
 }
 
 function DynamicField({ field, value, onChange, disabled = false }) {
@@ -157,7 +156,7 @@ function DynamicField({ field, value, onChange, disabled = false }) {
           <input
             {...commonProps}
             type={
-              ["email", "tel", "number", "date", "password"].includes(field.type)
+              ["email", "tel", "number", "date"].includes(field.type)
                 ? field.type
                 : "text"
             }
@@ -168,15 +167,12 @@ function DynamicField({ field, value, onChange, disabled = false }) {
                   ? "email"
                   : field.key === "username"
                     ? "username"
-                    : field.key === "password"
-                      ? "new-password"
-                      : field.key === "phone"
+                    : field.key === "phone"
                         ? "tel"
                         : field.key === "address"
                           ? "street-address"
                           : "off"
             }
-            minLength={field.key === "password" ? 8 : undefined}
             spellCheck={field.key === "username" ? false : undefined}
             placeholder={`Enter ${field.label.toLowerCase()}`}
           />
@@ -211,7 +207,7 @@ export function RegistrationPage({ role }) {
         setFormData({
           website: "",
           ...Object.fromEntries(
-            (form.fields ?? []).map((field) => [field.key, emptyValueFor(field)]),
+            withConsentField(form.fields ?? []).map((field) => [field.key, emptyValueFor(field)]),
           ),
         });
         setCampaignStatus(campaignSlug ? (campaign ? "ready" : "invalid") : "none");
