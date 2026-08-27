@@ -821,6 +821,137 @@
   gap: 16px;
 }
 
+.admin-directory-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.admin-directory-controls select {
+  min-height: 43px;
+  padding: 8px 28px 8px 10px;
+  color: var(--admin-ink);
+  background: #ffffff;
+  border: 1px solid #cdd6e1;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.admin-directory-controls select:focus {
+  border-color: var(--admin-blue);
+  outline: 3px solid rgb(12 77 162 / 10%);
+}
+
+.admin-directory-selection-bar {
+  margin: -4px 0 16px;
+  padding: 11px 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #43516b;
+  background: #f5f9ff;
+  border: 1px solid #d5e4f5;
+  border-radius: 10px;
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.admin-directory-selection-bar > div,
+.admin-pagination > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.admin-directory-selection-bar .admin-secondary-button,
+.admin-pagination .admin-secondary-button {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 0.7rem;
+}
+
+.admin-text-action {
+  padding: 5px;
+  color: var(--admin-blue);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.admin-row-checkbox {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: var(--admin-blue);
+}
+
+.admin-row-checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.admin-pagination {
+  margin-top: 17px;
+  padding-top: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: var(--admin-muted);
+  border-top: 1px solid var(--admin-line);
+  font-size: 0.75rem;
+}
+
+.admin-pagination strong {
+  color: var(--admin-navy);
+  font-size: 0.74rem;
+}
+
+.admin-student-message-composer {
+  margin-top: 20px;
+  background:
+    linear-gradient(135deg, rgb(234 242 252 / 88%), #ffffff 54%, rgb(234 248 240 / 72%));
+  border-color: #cbdcea;
+}
+
+.admin-recipient-summary {
+  margin: -3px 0 15px;
+  padding: 10px 12px;
+  color: #4c5d75;
+  background: rgb(255 255 255 / 78%);
+  border: 1px solid #d9e5f0;
+  border-radius: 9px;
+  font-size: 0.77rem;
+  line-height: 1.45;
+}
+
+.admin-recipient-summary strong {
+  color: var(--admin-navy);
+}
+
+.admin-student-message-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 14px;
+}
+
+.admin-student-message-form .admin-primary-button {
+  min-width: 178px;
+}
+
+.admin-pending-marking {
+  margin-top: 20px;
+}
+
 .admin-panel-heading h3 {
   margin: 0;
   color: var(--admin-navy);
@@ -2488,6 +2619,14 @@
   .admin-report-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .admin-student-message-form {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-student-message-form .admin-primary-button {
+    width: 100%;
+  }
 }
 
 @media (max-width: 680px) {
@@ -2602,6 +2741,20 @@
   .admin-toolbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .admin-directory-controls,
+  .admin-directory-selection-bar,
+  .admin-pagination {
+    width: 100%;
+    align-items: flex-start;
+    justify-content: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-directory-controls label,
+  .admin-directory-controls select {
+    width: 100%;
   }
 
   .admin-search {

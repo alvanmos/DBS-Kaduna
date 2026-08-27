@@ -207,7 +207,89 @@ function formatMessageTime(value) {
   }).format(new Date(value));
 }
 
-function DashboardSummary({ students, instructors }) {
+function OutstandingMarkingPanel({ students, instructors, questions, submissions }) {
+  const studentsById = new Map(students.map((student) => [student.id, student]));
+  const instructorsById = new Map(instructors.map((instructor) => [instructor.id, instructor]));
+  const questionsById = new Map(questions.map((question) => [question.id, question]));
+  const outstanding = new Map();
+
+  submissions
+    .filter((submission) => submission.needsMarking)
+    .forEach((submission) => {
+      const student = studentsById.get(submission.studentId);
+      if (!student) return;
+      const instructor =
+        instructorsById.get(submission.markerInstructorId) ??
+        instructorsById.get(student.instructorId);
+      const question = questionsById.get(submission.questionId);
+      const key = `${student.id}:${instructor?.id ?? "unassigned"}`;
+      const current = outstanding.get(key) ?? {
+        student,
+        instructor,
+        count: 0,
+        lessons: new Set(),
+        latestSubmission: "",
+      };
+      current.count += 1;
+      if (question?.lesson) current.lessons.add(question.lesson);
+      if (submission.submittedAt > current.latestSubmission) {
+        current.latestSubmission = submission.submittedAt;
+      }
+      outstanding.set(key, current);
+    });
+
+  const rows = [...outstanding.values()].sort(
+    (first, second) =>
+      new Date(second.latestSubmission || 0) - new Date(first.latestSubmission || 0),
+  );
+
+  return (
+    <section className="admin-panel admin-pending-marking">
+      <div className="admin-panel-heading">
+        <div>
+          <h3>Submissions awaiting marking</h3>
+          <p>Students with gradeable work still awaiting review, grouped with the instructor responsible.</p>
+        </div>
+        <StatusBadge tone={rows.length ? "gold" : "green"}>{rows.length} student{rows.length === 1 ? "" : "s"}</StatusBadge>
+      </div>
+      {rows.length ? (
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <caption className="sr-only">Students with submissions awaiting marking and their corresponding instructors</caption>
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Instructor responsible</th>
+                <th>Pending work</th>
+                <th>Latest submission</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={`${row.student.id}-${row.instructor?.id ?? "unassigned"}`}>
+                  <td><strong>{row.student.name}</strong><small>{row.student.serial}</small></td>
+                  <td>
+                    {row.instructor ? (
+                      <><strong>{row.instructor.name}</strong><small>{row.instructor.email || "Active instructor"}</small></>
+                    ) : (
+                      <StatusBadge tone="red">Awaiting assignment</StatusBadge>
+                    )}
+                  </td>
+                  <td><strong>{row.count} answer{row.count === 1 ? "" : "s"}</strong><small>Lesson{row.lessons.size === 1 ? "" : "s"} {[...row.lessons].sort((a, b) => a - b).join(", ") || "not available"}</small></td>
+                  <td>{row.latestSubmission ? formatMessageTime(row.latestSubmission) : "Not available"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <EmptyState>There are no gradeable submissions awaiting marking.</EmptyState>
+      )}
+    </section>
+  );
+}
+
+function DashboardSummary({ students, instructors, questions, submissions }) {
   const summary = {
     totalStudents: students.length,
     activeStudents: countWhere(students, (student) => student.status === "Active"),
@@ -370,6 +452,13 @@ function DashboardSummary({ students, instructors }) {
           </div>
         </section>
       </div>
+
+      <OutstandingMarkingPanel
+        students={students}
+        instructors={instructors}
+        questions={questions}
+        submissions={submissions}
+      />
     </>
   );
 }
@@ -381,17 +470,37 @@ function StudentManagement({
   questions,
   submissions,
   onAssignStudent,
+  onSendMessage,
   onDeleteAccount,
   onNotify,
 }) {
   const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [assignmentFilter, setAssignmentFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [selectedStudentIds, setSelectedStudentIds] = useState(() => new Set());
+  const [messageDraft, setMessageDraft] = useState("");
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState(students[0]?.id ?? "");
   const [mapMode, setMapMode] = useState("selected");
 
-  const filteredStudents = students.filter((student) =>
-    `${student.name} ${student.serial} ${student.username} ${student.denomination}`
+  const filteredStudents = students.filter((student) => {
+    const matchesQuery = `${student.name} ${student.serial} ${student.username} ${student.denomination}`
       .toLowerCase()
-      .includes(query.toLowerCase()),
+      .includes(query.toLowerCase());
+    const matchesStatus = statusFilter === "all" || student.status.toLowerCase() === statusFilter;
+    const matchesAssignment =
+      assignmentFilter === "all" ||
+      (assignmentFilter === "assigned" ? Boolean(student.instructorId) : !student.instructorId);
+    return matchesQuery && matchesStatus && matchesAssignment;
+  });
+  const pageSize = 12;
+  const pageCount = Math.max(1, Math.ceil(filteredStudents.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const pagedStudents = filteredStudents.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const activeFilteredStudents = filteredStudents.filter((student) => student.status === "Active");
+  const selectedStudents = students.filter(
+    (student) => selectedStudentIds.has(student.id) && student.status === "Active",
   );
   const selectedStudent =
     students.find((student) => student.id === selectedStudentId) ?? students[0];
@@ -436,6 +545,48 @@ function StudentManagement({
     }
   }
 
+  function resetToFirstPage() {
+    setPage(1);
+  }
+
+  function toggleStudentSelection(studentId) {
+    setSelectedStudentIds((current) => {
+      const next = new Set(current);
+      if (next.has(studentId)) next.delete(studentId);
+      else next.add(studentId);
+      return next;
+    });
+  }
+
+  function toggleFilteredSelection() {
+    const filteredIds = activeFilteredStudents.map((student) => student.id);
+    const shouldClear = filteredIds.length > 0 && filteredIds.every((studentId) => selectedStudentIds.has(studentId));
+    setSelectedStudentIds((current) => {
+      const next = new Set(current);
+      filteredIds.forEach((studentId) => {
+        if (shouldClear) next.delete(studentId);
+        else next.add(studentId);
+      });
+      return next;
+    });
+  }
+
+  async function sendStudentsMessage(event) {
+    event.preventDefault();
+    if (!selectedStudents.length) return;
+    setIsSendingMessage(true);
+    try {
+      const delivered = await onSendMessage(selectedStudents.map((student) => student.id), messageDraft);
+      setMessageDraft("");
+      setSelectedStudentIds(new Set());
+      onNotify(`Message sent to ${delivered ?? selectedStudents.length} student${selectedStudents.length === 1 ? "" : "s"}.`);
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    } finally {
+      setIsSendingMessage(false);
+    }
+  }
+
   const mapCenter = selectedStudent?.location ?? {
     city: "Kaduna",
     lat: 10.5105,
@@ -460,16 +611,47 @@ function StudentManagement({
             className="admin-search"
             type="search"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              resetToFirstPage();
+            }}
             placeholder="Search by name, serial, or denomination"
             aria-label="Search students"
           />
-          <StatusBadge tone="blue">{filteredStudents.length} students</StatusBadge>
+          <div className="admin-directory-controls">
+            <label>
+              <span className="sr-only">Filter by student status</span>
+              <select value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); resetToFirstPage(); }}>
+                <option value="all">All statuses</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </label>
+            <label>
+              <span className="sr-only">Filter by instructor assignment</span>
+              <select value={assignmentFilter} onChange={(event) => { setAssignmentFilter(event.target.value); resetToFirstPage(); }}>
+                <option value="all">All assignments</option>
+                <option value="assigned">Assigned</option>
+                <option value="unassigned">Awaiting assignment</option>
+              </select>
+            </label>
+            <StatusBadge tone="blue">{filteredStudents.length} students</StatusBadge>
+          </div>
+        </div>
+        <div className="admin-directory-selection-bar">
+          <span>{selectedStudents.length ? `${selectedStudents.length} active student${selectedStudents.length === 1 ? "" : "s"} selected` : "Select active students to send one private notice."}</span>
+          <div>
+            <button className="admin-secondary-button" type="button" onClick={toggleFilteredSelection} disabled={!activeFilteredStudents.length}>
+              {activeFilteredStudents.length && activeFilteredStudents.every((student) => selectedStudentIds.has(student.id)) ? "Clear filtered selection" : "Select filtered students"}
+            </button>
+            {selectedStudents.length > 0 && <button className="admin-text-action" type="button" onClick={() => setSelectedStudentIds(new Set())}>Clear all</button>}
+          </div>
         </div>
         <div className="admin-table-wrap">
           <table className="admin-table admin-table--interactive">
             <thead>
               <tr>
+                <th><span className="sr-only">Select student</span></th>
                 <th>Student</th>
                 <th>Status</th>
                 <th>Progress</th>
@@ -478,11 +660,22 @@ function StudentManagement({
               </tr>
             </thead>
             <tbody>
-              {filteredStudents.map((student) => (
+              {pagedStudents.map((student) => (
                 <tr
                   className={selectedStudentId === student.id ? "is-selected" : ""}
                   key={student.id}
                 >
+                  <td>
+                    <input
+                      className="admin-row-checkbox"
+                      type="checkbox"
+                      checked={selectedStudentIds.has(student.id)}
+                      disabled={student.status !== "Active"}
+                      onChange={() => toggleStudentSelection(student.id)}
+                      aria-label={`Select ${student.name} for an administrator message`}
+                      title={student.status === "Active" ? "Select for a message" : "Inactive accounts cannot receive messages"}
+                    />
+                  </td>
                   <td>
                     <button
                       className="admin-text-button"
@@ -552,6 +745,38 @@ function StudentManagement({
             </tbody>
           </table>
         </div>
+        {filteredStudents.length === 0 && <EmptyState>No students match the current search and filters.</EmptyState>}
+        {filteredStudents.length > pageSize && (
+          <div className="admin-pagination" aria-label="Student directory pagination">
+            <span>Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredStudents.length)} of {filteredStudents.length}</span>
+            <div>
+              <button className="admin-secondary-button" type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={currentPage === 1}>Previous</button>
+              <strong>Page {currentPage} of {pageCount}</strong>
+              <button className="admin-secondary-button" type="button" onClick={() => setPage((current) => Math.min(pageCount, current + 1))} disabled={currentPage === pageCount}>Next</button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section className="admin-panel admin-student-message-composer">
+        <div className="admin-panel-heading">
+          <div>
+            <h3>Message selected students</h3>
+            <p>Send the same private administration notice to the active student accounts you select above.</p>
+          </div>
+          <StatusBadge tone={selectedStudents.length ? "green" : "neutral"}>{selectedStudents.length} selected</StatusBadge>
+        </div>
+        {selectedStudents.length > 0 && <p className="admin-recipient-summary"><strong>To:</strong> {selectedStudents.slice(0, 4).map((student) => student.name).join(", ")}{selectedStudents.length > 4 ? ` and ${selectedStudents.length - 4} more` : ""}</p>}
+        <form className="admin-student-message-form" onSubmit={sendStudentsMessage}>
+          <label className="admin-message-field">
+            <span>Message</span>
+            <textarea rows="4" value={messageDraft} onChange={(event) => setMessageDraft(event.target.value)} placeholder="Share an important school update, encouragement, or next step." required disabled={!selectedStudents.length || isSendingMessage} />
+          </label>
+          <button className="admin-primary-button" type="submit" disabled={!selectedStudents.length || isSendingMessage}>
+            <PaperPlaneTilt aria-hidden="true" size={18} />
+            {isSendingMessage ? "Sending..." : `Send to ${selectedStudents.length || "selected"} student${selectedStudents.length === 1 ? "" : "s"}`}
+          </button>
+        </form>
       </section>
 
       <div className="admin-two-column admin-two-column--student">
@@ -2512,6 +2737,7 @@ export function AdminDashboard({
         questions={data.questions}
         submissions={data.submissions}
         onAssignStudent={actions.assignStudent}
+        onSendMessage={actions.sendAdminMessageToStudents}
         onDeleteAccount={actions.deleteAccount}
         onNotify={notify}
       />
@@ -2604,6 +2830,8 @@ export function AdminDashboard({
       <DashboardSummary
         students={data.students}
         instructors={data.instructors}
+        questions={data.questions}
+        submissions={data.submissions}
       />
     );
   }

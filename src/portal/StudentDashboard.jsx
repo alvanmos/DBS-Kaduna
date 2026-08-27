@@ -237,6 +237,7 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
   const canAnswer = ["available", "in_progress", "returned"].includes(currentStatus);
   const certificate = data.certificates[0];
   const studentMessages = data.messages ?? [];
+  const adminMessages = data.adminMessages ?? [];
   const activeQuestion = lessonQuestions[activeQuestionIndex];
   const activeSubmission = lessonSubmissions.find((submission) => submission.question_id === activeQuestion?.id);
   const needsAnswer = !activeSubmission || activeSubmission.status === "returned";
@@ -498,6 +499,22 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
                 </button>
               </div>
             </form>
+          </section>}
+
+          {activeSection === "messages" && adminMessages.length > 0 && <section className="portal-panel portal-admin-notices">
+            <div className="portal-admin-notices__heading">
+              <div><p>DBS Kaduna administration</p><h2>School notices</h2><span>Important messages sent directly to your student dashboard.</span></div>
+              <PaperPlaneTilt size={31} weight="duotone" />
+            </div>
+            <div className="portal-admin-notices__list">
+              {adminMessages.map((message) => (
+                <article key={message.id}>
+                  <strong>Administration</strong>
+                  <p>{message.body}</p>
+                  <small>{formatMessageTime(message.created_at)}</small>
+                </article>
+              ))}
+            </div>
           </section>}
 
           {activeSection === "messages" && <section className="portal-panel portal-message-panel">

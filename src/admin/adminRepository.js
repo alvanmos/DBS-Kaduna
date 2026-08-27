@@ -84,9 +84,15 @@ function currentLessonNumber(progress) {
   return nextLesson?.lesson_number ?? 26;
 }
 
-function submissionNeedsMarking(submission, completedLessonsByStudent, lessonByQuestion) {
+function submissionNeedsMarking(
+  submission,
+  completedLessonsByStudent,
+  lessonByQuestion,
+  questionKindByQuestion,
+) {
   return (
     submission.status === "submitted" &&
+    questionKindByQuestion.get(submission.question_id) !== "thought" &&
     !completedLessonsByStudent
       .get(submission.student_id)
       ?.has(lessonByQuestion.get(submission.question_id))
@@ -122,6 +128,7 @@ function isMissingMessagingSchema(error) {
     error?.code === "PGRST202" ||
     error?.code === "PGRST205" ||
     error?.message?.includes("portal_messages") ||
+    error?.message?.includes("admin_send_student_message") ||
     error?.message?.includes("schema cache")
   );
 }
@@ -240,6 +247,9 @@ export async function loadAdminData() {
   const lessonByQuestion = new Map(
     questions.map((question) => [question.id, question.lesson_number]),
   );
+  const questionKindByQuestion = new Map(
+    questions.map((question) => [question.id, question.kind]),
+  );
   const completedLessonsByStudent = new Map();
   progress.forEach((item) => {
     if (item.status !== "completed") return;
@@ -273,6 +283,7 @@ export async function loadAdminData() {
             submission,
             completedLessonsByStudent,
             lessonByQuestion,
+            questionKindByQuestion,
           ),
       ).length,
       graduationRequests: graduationRequests.filter(
@@ -391,6 +402,13 @@ export async function loadAdminData() {
     submittedAt: submission.submitted_at,
     score: submission.score,
     feedback: submission.feedback,
+    markerInstructorId: submission.marker_instructor_id,
+    needsMarking: submissionNeedsMarking(
+      submission,
+      completedLessonsByStudent,
+      lessonByQuestion,
+      questionKindByQuestion,
+    ),
   }));
 
   const mappedCertificates = certificates.map((certificate) => ({
@@ -780,6 +798,15 @@ export async function sendAdminMessageToInstructor(instructorId, body) {
   return throwIfMessagingUnavailable(
     await supabase.rpc("admin_send_instructor_message", {
       input_instructor_id: instructorId,
+      input_body: body,
+    }),
+  );
+}
+
+export async function sendAdminMessageToStudents(studentIds, body) {
+  return throwIfMessagingUnavailable(
+    await supabase.rpc("admin_send_student_message", {
+      input_student_ids: studentIds,
       input_body: body,
     }),
   );

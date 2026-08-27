@@ -1192,6 +1192,96 @@
   box-shadow: 0 10px 20px rgb(2 28 74 / 22%);
 }
 
+.portal-admin-notices {
+  margin-bottom: 20px;
+  overflow: hidden;
+  padding: 0;
+  border-color: #d8e5f1;
+}
+
+.portal-admin-notices__heading {
+  padding: 20px 22px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  color: var(--portal-navy);
+  background: linear-gradient(115deg, #f3f8ff, #ffffff 68%, #effaf3);
+  border-bottom: 1px solid #dde8f1;
+}
+
+.portal-admin-notices__heading p,
+.portal-admin-notices__heading h2,
+.portal-admin-notices__heading span {
+  margin: 0;
+}
+
+.portal-admin-notices__heading p {
+  color: var(--portal-green);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.portal-admin-notices__heading h2 {
+  margin-top: 5px;
+  font-size: 1.12rem;
+}
+
+.portal-admin-notices__heading span {
+  display: block;
+  margin-top: 6px;
+  color: var(--portal-muted);
+  font-size: 0.77rem;
+  line-height: 1.45;
+}
+
+.portal-admin-notices__heading > svg {
+  width: 45px;
+  height: 45px;
+  padding: 11px;
+  flex: 0 0 auto;
+  color: var(--portal-green);
+  background: #e6f5ec;
+  border-radius: 13px;
+}
+
+.portal-admin-notices__list {
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.portal-admin-notices__list article {
+  padding: 13px 14px;
+  color: #40516c;
+  background: #f8fafc;
+  border: 1px solid #e0e8ef;
+  border-radius: 11px;
+}
+
+.portal-admin-notices__list strong,
+.portal-admin-notices__list small {
+  display: block;
+}
+
+.portal-admin-notices__list strong {
+  color: var(--portal-navy);
+  font-size: 0.78rem;
+}
+
+.portal-admin-notices__list p {
+  margin: 7px 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.portal-admin-notices__list small {
+  color: var(--portal-muted);
+  font-size: 0.68rem;
+}
+
 .portal-message-student-list {
   position: sticky;
   top: 20px;
