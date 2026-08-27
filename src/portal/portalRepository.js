@@ -22,6 +22,7 @@ function isMissingMessagingSchema(error) {
     "instructor_send_student_message",
     "instructor_send_admin_message",
     "admin_send_instructor_message",
+    "admin_send_student_message",
   ]);
 }
 
@@ -163,7 +164,7 @@ export async function loadStudentDashboard() {
       firstLoginAt || rememberWelcomeLetterFirstLogin(profile.id);
   }
 
-  const [progress, submissions, certificates, messages] = await Promise.all([
+  const [progress, submissions, certificates, messages, adminMessages] = await Promise.all([
     supabase
       .from("student_lesson_progress")
       .select("*")
@@ -189,6 +190,14 @@ export async function loadStudentDashboard() {
       .eq("student_id", student.id)
       .eq("channel", "student_instructor")
       .order("created_at")
+    ),
+    loadPortalMessages(
+      supabase
+      .from("portal_messages")
+      .select("*")
+      .eq("student_id", student.id)
+      .eq("channel", "admin_student")
+      .order("created_at", { ascending: false }),
     ),
   ]);
 
@@ -228,6 +237,7 @@ export async function loadStudentDashboard() {
     submissions,
     certificates,
     messages,
+    adminMessages,
   };
 }
 

@@ -19,6 +19,7 @@ import {
   publishNews,
   saveRegistrationForm,
   sendAdminMessageToInstructor,
+  sendAdminMessageToStudents,
   updateQuestionType,
   updateInstructor,
   uploadCertificatePdf,
@@ -231,6 +232,8 @@ export function AdminPortal() {
       runAction(() => saveRegistrationForm(form)),
     sendAdminMessage: (instructorId, body) =>
       runAction(() => sendAdminMessageToInstructor(instructorId, body)),
+    sendAdminMessageToStudents: (studentIds, body) =>
+      runAction(() => sendAdminMessageToStudents(studentIds, body)),
     publishNews: (newsItem) => runAction(() => publishNews(newsItem)),
     deleteNews: (newsItem) => runAction(() => deleteNews(newsItem)),
     clearRegistrationData: () => runAction(() => clearRegistrationData()),
