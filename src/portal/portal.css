@@ -2057,6 +2057,36 @@
   font-weight: 800;
 }
 
+.portal-student-pagination {
+  margin-top: 8px;
+  padding-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--portal-muted);
+  border-top: 1px solid #e1e8ef;
+  font-size: 0.68rem;
+}
+
+.portal-student-pagination > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.portal-student-pagination .portal-secondary-button {
+  min-height: 32px;
+  padding: 6px 9px;
+  font-size: 0.66rem;
+}
+
+.portal-student-pagination strong {
+  color: var(--portal-navy);
+  font-size: 0.67rem;
+  white-space: nowrap;
+}
+
 .portal-teacher-lessons {
   margin: 20px 0;
   display: grid;

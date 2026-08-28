@@ -60,6 +60,17 @@ function formatMessageTime(value) {
   }).format(new Date(value));
 }
 
+function alphabetizeStudents(students) {
+  return [...students]
+    .sort((first, second) =>
+      first.full_name.localeCompare(second.full_name, undefined, {
+        sensitivity: "base",
+        numeric: true,
+      }),
+    )
+    .map((student, index) => ({ ...student, serial: index + 1 }));
+}
+
 function StudentContactDetails({ student }) {
   return (
     <section className="portal-student-contact-card" aria-label={`${student.full_name}'s contact information`}>
@@ -83,6 +94,7 @@ const instructorSections = [
 export function InstructorDashboard({ profile, onSignOut }) {
   const [data, setData] = useState(null);
   const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [studentPage, setStudentPage] = useState(1);
   const [selectedLesson, setSelectedLesson] = useState(1);
   const [reviews, setReviews] = useState({});
   const [status, setStatus] = useState("loading");
@@ -114,7 +126,18 @@ export function InstructorDashboard({ profile, onSignOut }) {
     refresh();
   }, []);
 
-  const selectedStudent = data?.students.find((student) => student.id === selectedStudentId);
+  const students = useMemo(
+    () => alphabetizeStudents(data?.students ?? []),
+    [data?.students],
+  );
+  const studentPageSize = 6;
+  const studentPageCount = Math.max(1, Math.ceil(students.length / studentPageSize));
+  const currentStudentPage = Math.min(studentPage, studentPageCount);
+  const pagedStudents = students.slice(
+    (currentStudentPage - 1) * studentPageSize,
+    currentStudentPage * studentPageSize,
+  );
+  const selectedStudent = students.find((student) => student.id === selectedStudentId);
   const lessonQuestions = useMemo(
     () => data?.questions.filter((question) => question.lesson_number === selectedLesson) ?? [],
     [data, selectedLesson],
@@ -343,14 +366,15 @@ export function InstructorDashboard({ profile, onSignOut }) {
         {(activeSection === "reviews" || activeSection === "messages") && <div className={activeSection === "messages" ? "portal-teacher-layout portal-teacher-layout--messages" : "portal-teacher-layout"}>
           <aside className={activeSection === "messages" ? "portal-panel portal-student-list portal-message-student-list" : "portal-panel portal-student-list"}>
             <div className="portal-panel-heading"><div><p>Your class</p><h2>Assigned students</h2></div></div>
-            {data.students.length === 0 ? <div className="portal-empty">No students are assigned yet.</div> : data.students.map((student) => {
+            {students.length === 0 ? <div className="portal-empty">No students are assigned yet.</div> : pagedStudents.map((student) => {
               const studentPending = data.submissions.filter(
                 (item) =>
                   item.student_id === student.id &&
                   submissionNeedsMarking(item, data.progress, data.questions),
               ).length;
-              return <button className={selectedStudentId === student.id ? "is-active" : ""} type="button" key={student.id} onClick={() => { setSelectedStudentId(student.id); setSelectedLesson(1); }}><span><strong>{student.full_name}</strong><small>{student.email || student.serial_number}</small></span>{studentPending > 0 && <i>{studentPending}</i>}</button>;
+              return <button className={selectedStudentId === student.id ? "is-active" : ""} type="button" key={student.id} onClick={() => { setSelectedStudentId(student.id); setSelectedLesson(1); }}><span><strong>{student.full_name}</strong><small>Student {student.serial} · {student.email || "No email address"}</small></span>{studentPending > 0 && <i>{studentPending}</i>}</button>;
             })}
+            {students.length > studentPageSize && <nav className="portal-student-pagination" aria-label="Assigned students pagination"><span>Showing {(currentStudentPage - 1) * studentPageSize + 1}–{Math.min(currentStudentPage * studentPageSize, students.length)} of {students.length}</span><div><button className="portal-secondary-button" type="button" onClick={() => setStudentPage((current) => Math.max(1, current - 1))} disabled={currentStudentPage === 1}>Previous</button><strong>Page {currentStudentPage} of {studentPageCount}</strong><button className="portal-secondary-button" type="button" onClick={() => setStudentPage((current) => Math.min(studentPageCount, current + 1))} disabled={currentStudentPage === studentPageCount}>Next</button></div></nav>}
           </aside>
 
           <section className="portal-panel portal-teacher-workspace">
