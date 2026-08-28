@@ -290,6 +290,14 @@ function OutstandingMarkingPanel({ students, instructors, questions, submissions
 }
 
 function DashboardSummary({ students, instructors, questions, submissions }) {
+  const [studentPage, setStudentPage] = useState(1);
+  const studentPageSize = 12;
+  const studentPageCount = Math.max(1, Math.ceil(students.length / studentPageSize));
+  const currentStudentPage = Math.min(studentPage, studentPageCount);
+  const pagedStudents = students.slice(
+    (currentStudentPage - 1) * studentPageSize,
+    currentStudentPage * studentPageSize,
+  );
   const summary = {
     totalStudents: students.length,
     activeStudents: countWhere(students, (student) => student.status === "Active"),
@@ -398,7 +406,7 @@ function DashboardSummary({ students, instructors, questions, submissions }) {
                 </tr>
               </thead>
               <tbody>
-                {students.map((student) => (
+                {pagedStudents.map((student) => (
                   <tr key={student.id}>
                     <td>
                       <strong>{student.name}</strong>
@@ -412,6 +420,33 @@ function DashboardSummary({ students, instructors, questions, submissions }) {
               </tbody>
             </table>
           </div>
+          {students.length > studentPageSize && (
+            <div className="admin-pagination" aria-label="Dashboard student list pagination">
+              <span>
+                Showing {(currentStudentPage - 1) * studentPageSize + 1}–
+                {Math.min(currentStudentPage * studentPageSize, students.length)} of {students.length}
+              </span>
+              <div>
+                <button
+                  className="admin-secondary-button"
+                  type="button"
+                  onClick={() => setStudentPage((current) => Math.max(1, current - 1))}
+                  disabled={currentStudentPage === 1}
+                >
+                  Previous
+                </button>
+                <strong>Page {currentStudentPage} of {studentPageCount}</strong>
+                <button
+                  className="admin-secondary-button"
+                  type="button"
+                  onClick={() => setStudentPage((current) => Math.min(studentPageCount, current + 1))}
+                  disabled={currentStudentPage === studentPageCount}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="admin-panel">
