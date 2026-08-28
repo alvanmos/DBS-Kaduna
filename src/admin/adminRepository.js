@@ -370,7 +370,17 @@ export async function loadAdminData() {
         lng: Number(student.longitude ?? 7.4165),
       },
     };
-  });
+  })
+    .sort((first, second) =>
+      first.name.localeCompare(second.name, undefined, {
+        sensitivity: "base",
+        numeric: true,
+      }),
+    )
+    .map((student, index) => ({
+      ...student,
+      serial: index + 1,
+    }));
 
   const mappedLessons = lessons.map((lesson) => ({
     id: `lesson-${String(lesson.number).padStart(2, "0")}`,
