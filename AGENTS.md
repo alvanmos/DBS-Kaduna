@@ -56,6 +56,7 @@ When implementing from a selected generated mock, treat that image as the source
 - Keep the student "My details" workspace full-width, with a polished responsive multi-column profile form on larger screens.
 - Present student lesson questions one at a time in a bold, colourful sequence; require each answer to be submitted before revealing the Next Question control.
 - Instructor dashboards must show only assigned students, support lesson locks, marking and comments, correction returns, completion, and graduation requests.
+- Keep the instructor Student reviews and Messages student lists alphabetized, serially numbered from 1, and paginated at six students per page.
 - Present submitted, gradeable instructor-review questions one at a time in a bold, colourful sequence; require a saved score before revealing the Next Question control, and exclude Thought Questions from grading.
 - Account emails must use secure invitation/password-setup links; never email plaintext passwords.
 - Send each newly registered student the supplied DBS Kaduna welcome letter as a PDF attachment.
