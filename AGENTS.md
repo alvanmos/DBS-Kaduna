@@ -43,7 +43,7 @@ When implementing from a selected generated mock, treat that image as the source
 - Blink the homepage News control for seven days after the newest publication, while respecting reduced-motion preferences.
 - Keep QR campaign titles private to administrators and allow administrators to delete campaigns.
 - Let administrators publish and modify student and volunteer-instructor registration forms, including compulsory and optional fields.
-- Student accounts receive secure setup-email links immediately after registration; volunteer instructors receive access only after administrator approval.
+- Student accounts are available immediately with the password chosen at registration; volunteer instructors can sign in with their chosen password only after administrator approval.
 
 ## Learning Portal Direction
 
@@ -58,7 +58,7 @@ When implementing from a selected generated mock, treat that image as the source
 - Instructor dashboards must show only assigned students, support lesson locks, marking and comments, correction returns, completion, and graduation requests.
 - Keep the instructor Student reviews and Messages student lists alphabetized, serially numbered from 1, and paginated at six students per page.
 - Present submitted, gradeable instructor-review questions one at a time in a bold, colourful sequence; require a saved score before revealing the Next Question control, and exclude Thought Questions from grading.
-- Account emails must use secure invitation/password-setup links; never email plaintext passwords.
+- Collect a password immediately after Username on each registration form; passwords are sent only to Supabase Auth, never stored in registration data or emailed in plaintext.
 - Send each newly registered student the supplied DBS Kaduna welcome letter as a PDF attachment.
 - Keep the welcome letter downloadable from the student dashboard and keep its PDF download control blinking, respecting reduced-motion preferences.
 - Keep enabled lesson PDF controls blinking on both learning dashboards to prompt instructors and students to open or download their study material, respecting reduced-motion preferences.

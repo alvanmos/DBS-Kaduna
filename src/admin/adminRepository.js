@@ -55,6 +55,13 @@ const protectedFieldDefinitions = {
     required: true,
     system: true,
   },
+  password: {
+    key: "password",
+    label: "Password",
+    type: "password",
+    required: true,
+    system: true,
+  },
   privacy_consent: {
     key: "privacy_consent",
     label:
@@ -712,7 +719,9 @@ export async function deleteRecruitmentCampaign(campaignId) {
 }
 
 export async function saveRegistrationForm(form) {
-  const protectedKeys = Object.keys(protectedFieldDefinitions);
+  const protectedKeys = Object.keys(protectedFieldDefinitions).filter(
+    (key) => key !== "privacy_consent",
+  );
   const fieldsByKey = new Map(
     form.fields.map((field) => [
       field.key,
@@ -730,15 +739,15 @@ export async function saveRegistrationForm(form) {
     ...form.fields
       .filter(
         (field) =>
-          field.key !== "password" &&
-          field.type !== "password" &&
-          !protectedKeys.includes(field.key),
+          !protectedKeys.includes(field.key) &&
+          field.key !== "privacy_consent",
       )
       .map((field) => ({
         ...field,
         required: Boolean(field.required),
         options: Array.isArray(field.options) ? field.options : [],
       })),
+    protectedFieldDefinitions.privacy_consent,
   ];
 
   return throwIfError(

@@ -2463,7 +2463,7 @@ function RegistrationFormManagement({
             <div className="admin-panel-heading">
               <div>
                 <h3>Form fields</h3>
-                <p>Full name, email, username, and privacy consent stay compulsory because they create secure accounts and record permission to process registration data. Password setup happens through a secure email link.</p>
+                <p>Full name, email, username, password, and privacy consent stay compulsory because they create secure accounts and record permission to process registration data. Passwords are sent directly to Supabase Auth and are never stored with registration data.</p>
               </div>
               <button className="admin-secondary-button" type="button" onClick={addField}>
                 <Plus aria-hidden="true" size={18} />

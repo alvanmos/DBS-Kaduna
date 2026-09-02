@@ -69,11 +69,25 @@ export default async function handler(req, res) {
         throw new Error("The pending instructor profile could not be found.");
       }
 
-      const { error: resetError } =
-        await supabase.auth.resetPasswordForEmail(registration.email, {
-          redirectTo: `${siteUrl()}/login/instructor?type=invite`,
-        });
-      if (resetError) throw resetError;
+      const { data: userData, error: userError } =
+        await supabase.auth.admin.getUserById(profileId);
+      if (userError || !userData.user) {
+        throw new Error("The pending instructor account could not be found.");
+      }
+      const usesRegistrationPassword = Boolean(
+        userData.user.user_metadata?.registration_password_set,
+      );
+
+      if (usesRegistrationPassword) {
+        approvalMessage =
+          "Instructor approved. They can now sign in with the password chosen during registration.";
+      } else {
+        const { error: resetError } =
+          await supabase.auth.resetPasswordForEmail(registration.email, {
+            redirectTo: `${siteUrl()}/login/instructor?type=invite`,
+          });
+        if (resetError) throw resetError;
+      }
 
       const { error: activateProfileError } = await supabase
         .from("profiles")
