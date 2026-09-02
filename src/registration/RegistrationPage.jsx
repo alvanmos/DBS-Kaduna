@@ -92,18 +92,16 @@ function emptyValueFor(field) {
 }
 
 function withConsentField(fields = []) {
-  const passwordlessFields = fields.filter(
-    (field) => field.key !== "password" && field.type !== "password",
+  const fieldsBeforeConsent = fields.filter(
+    (field) =>
+      field.key !== "password" &&
+      field.type !== "password" &&
+      field.key !== privacyConsentField.key,
   );
-  const hasConsentField = passwordlessFields.some((field) => field.key === privacyConsentField.key);
-  if (hasConsentField) {
-    return passwordlessFields.map((field) =>
-      field.key === privacyConsentField.key
-        ? { ...field, ...privacyConsentField }
-        : field,
-    );
-  }
-  return [...passwordlessFields, privacyConsentField];
+
+  // This required agreement is always the final form field, regardless of the
+  // order chosen when an administrator publishes either registration form.
+  return [...fieldsBeforeConsent, privacyConsentField];
 }
 
 function DynamicField({ field, value, onChange, disabled = false }) {

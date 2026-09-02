@@ -67,6 +67,7 @@ When implementing from a selected generated mock, treat that image as the source
 
 - Show a short Privacy Notice on both student and volunteer-instructor registration pages.
 - Keep an unchecked, compulsory privacy-consent checkbox on every registration form.
+- Position the privacy-consent checkbox after every other registration field, immediately before the registration action, on both forms.
 - Let students correct their saved registration and contact data from their dashboard and provide a prototype delete-data action there.
 - Support bidirectional messaging between each student and the assigned instructor inside the learning portal.
 - Support bidirectional messaging between administration and volunteer instructors inside the administration and instructor portals.
