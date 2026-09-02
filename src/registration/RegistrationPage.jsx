@@ -4,6 +4,7 @@ import {
   CheckCircle,
   EnvelopeSimple,
   GraduationCap,
+  LockKey,
   MapPin,
   Phone,
   User,
@@ -45,11 +46,20 @@ const privacyConsentField = {
   system: true,
 };
 
+const passwordField = {
+  key: "password",
+  label: "Password",
+  type: "password",
+  required: true,
+  system: true,
+};
+
 const fallbackFieldsByRole = {
   student: [
     { key: "full_name", label: "Full name", type: "text", required: true, system: true },
     { key: "email", label: "Email address", type: "email", required: true, system: true },
     { key: "username", label: "Username", type: "text", required: true, system: true },
+    passwordField,
     { key: "phone", label: "Phone number", type: "tel", required: true, system: true },
     { key: "address", label: "Residential address", type: "textarea", required: true, system: true },
     { key: "denomination", label: "Denomination", type: "text", required: false },
@@ -64,6 +74,7 @@ const fallbackFieldsByRole = {
     { key: "full_name", label: "Full name", type: "text", required: true, system: true },
     { key: "email", label: "Email address", type: "email", required: true, system: true },
     { key: "username", label: "Username", type: "text", required: true, system: true },
+    passwordField,
     { key: "phone", label: "Phone number", type: "tel", required: true, system: true },
     { key: "address", label: "Residential address", type: "textarea", required: true, system: true },
     {
@@ -79,6 +90,7 @@ const fieldIcons = {
   full_name: User,
   email: EnvelopeSimple,
   username: User,
+  password: LockKey,
   phone: Phone,
   address: MapPin,
 };
@@ -92,16 +104,23 @@ function emptyValueFor(field) {
 }
 
 function withConsentField(fields = []) {
-  const fieldsBeforeConsent = fields.filter(
+  const fieldsWithoutConsent = fields.filter(
     (field) =>
-      field.key !== "password" &&
-      field.type !== "password" &&
       field.key !== privacyConsentField.key,
   );
+  const configuredPassword = fieldsWithoutConsent.find(
+    (field) => field.key === passwordField.key || field.type === passwordField.type,
+  );
+  const fieldsWithoutPassword = fieldsWithoutConsent.filter(
+    (field) => field.key !== passwordField.key && field.type !== passwordField.type,
+  );
+  const fieldsWithPasswordAfterUsername = fieldsWithoutPassword.flatMap((field) =>
+    field.key === "username"
+      ? [field, { ...configuredPassword, ...passwordField }]
+      : [field],
+  );
 
-  // This required agreement is always the final form field, regardless of the
-  // order chosen when an administrator publishes either registration form.
-  return [...fieldsBeforeConsent, privacyConsentField];
+  return [...fieldsWithPasswordAfterUsername, privacyConsentField];
 }
 
 function DynamicField({ field, value, onChange, disabled = false }) {
@@ -156,6 +175,8 @@ function DynamicField({ field, value, onChange, disabled = false }) {
             type={
               ["email", "tel", "number", "date"].includes(field.type)
                 ? field.type
+                : field.type === "password"
+                  ? "password"
                 : "text"
             }
             autoComplete={
@@ -165,6 +186,8 @@ function DynamicField({ field, value, onChange, disabled = false }) {
                   ? "email"
                   : field.key === "username"
                     ? "username"
+                    : field.key === "password"
+                      ? "new-password"
                     : field.key === "phone"
                         ? "tel"
                         : field.key === "address"
@@ -172,6 +195,7 @@ function DynamicField({ field, value, onChange, disabled = false }) {
                           : "off"
             }
             spellCheck={field.key === "username" ? false : undefined}
+            minLength={field.key === "password" ? 10 : undefined}
             placeholder={`Enter ${field.label.toLowerCase()}`}
           />
         )}
