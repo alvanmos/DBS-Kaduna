@@ -105,8 +105,7 @@ function emptyValueFor(field) {
 
 function withConsentField(fields = []) {
   const fieldsWithoutConsent = fields.filter(
-    (field) =>
-      field.key !== privacyConsentField.key,
+    (field) => field.key !== privacyConsentField.key,
   );
   const configuredPassword = fieldsWithoutConsent.find(
     (field) => field.key === passwordField.key || field.type === passwordField.type,
@@ -114,11 +113,23 @@ function withConsentField(fields = []) {
   const fieldsWithoutPassword = fieldsWithoutConsent.filter(
     (field) => field.key !== passwordField.key && field.type !== passwordField.type,
   );
-  const fieldsWithPasswordAfterUsername = fieldsWithoutPassword.flatMap((field) =>
-    field.key === "username"
-      ? [field, { ...configuredPassword, ...passwordField }]
-      : [field],
+  const usernameIndex = fieldsWithoutPassword.findIndex(
+    (field) =>
+      String(field.key ?? "").toLowerCase() === "username" ||
+      String(field.label ?? "").trim().toLowerCase() === "username",
   );
+  const password = { ...configuredPassword, ...passwordField };
+
+  // Published forms may retain an older field order. Build the displayed
+  // sequence explicitly so Password always follows Username.
+  const fieldsWithPasswordAfterUsername =
+    usernameIndex < 0
+      ? [...fieldsWithoutPassword, password]
+      : [
+          ...fieldsWithoutPassword.slice(0, usernameIndex + 1),
+          password,
+          ...fieldsWithoutPassword.slice(usernameIndex + 1),
+        ];
 
   return [...fieldsWithPasswordAfterUsername, privacyConsentField];
 }
