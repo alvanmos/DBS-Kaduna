@@ -37,10 +37,18 @@ function normalizeUsername(value) {
     .replace(/[-._]{2,}/g, "-");
 }
 
+function isPasswordField(field) {
+  return (
+    String(field?.key ?? "").toLowerCase() === "password" ||
+    String(field?.type ?? "").toLowerCase() === "password" ||
+    String(field?.label ?? "").trim().toLowerCase() === "password"
+  );
+}
+
 function sanitizeFormData(formData, username, fields) {
   const passwordKeys = new Set(
     (fields ?? [])
-      .filter((field) => field.key === "password" || field.type === "password")
+      .filter(isPasswordField)
       .map((field) => field.key),
   );
   return Object.fromEntries(
@@ -70,7 +78,7 @@ function validatePassword(password) {
 
 function validateForm(fields, formData) {
   const consentProvided = formData.privacy_consent === true;
-  for (const field of fields) {
+  for (const field of fields.filter((field) => !isPasswordField(field))) {
     const value = formData[field.key];
     if (
       field.required &&
