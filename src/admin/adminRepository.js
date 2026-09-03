@@ -72,6 +72,13 @@ const protectedFieldDefinitions = {
   },
 };
 
+function isLegacyPasswordField(field) {
+  return (
+    String(field?.label ?? "").trim().toLowerCase() === "password" &&
+    String(field?.key ?? "").toLowerCase() !== "password"
+  );
+}
+
 function capitalize(value) {
   if (!value) return "";
   return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
@@ -740,7 +747,8 @@ export async function saveRegistrationForm(form) {
       .filter(
         (field) =>
           !protectedKeys.includes(field.key) &&
-          field.key !== "privacy_consent",
+          field.key !== "privacy_consent" &&
+          !isLegacyPasswordField(field),
       )
       .map((field) => ({
         ...field,
