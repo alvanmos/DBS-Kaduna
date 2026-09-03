@@ -107,11 +107,15 @@ function withConsentField(fields = []) {
   const fieldsWithoutConsent = fields.filter(
     (field) => field.key !== privacyConsentField.key,
   );
+  const isPasswordField = (field) =>
+    String(field.key ?? "").toLowerCase() === "password" ||
+    String(field.type ?? "").toLowerCase() === "password" ||
+    String(field.label ?? "").trim().toLowerCase() === "password";
   const configuredPassword = fieldsWithoutConsent.find(
-    (field) => field.key === passwordField.key || field.type === passwordField.type,
+    isPasswordField,
   );
   const fieldsWithoutPassword = fieldsWithoutConsent.filter(
-    (field) => field.key !== passwordField.key && field.type !== passwordField.type,
+    (field) => !isPasswordField(field),
   );
   const usernameIndex = fieldsWithoutPassword.findIndex(
     (field) =>
