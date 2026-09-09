@@ -19,7 +19,7 @@ import {
   moveQuestion,
   publishNews,
   saveRegistrationForm,
-  saveAdminSubmissionComment,
+  saveAdminSubmissionReview,
   sendAdminMessageToInstructor,
   sendAdminMessageToStudents,
   updateQuestionType,
@@ -220,8 +220,8 @@ export function AdminPortal() {
       runAction(() => updateQuestionType(questionId, type)),
     completeLesson: (studentId, lessonNumber) =>
       runAction(() => completeLessonAndNotify(studentId, lessonNumber)),
-    saveSubmissionComment: (submissionId, feedback) =>
-      runAction(() => saveAdminSubmissionComment(submissionId, feedback)),
+    saveSubmissionReview: (submissionId, score, feedback) =>
+      runAction(() => saveAdminSubmissionReview(submissionId, score, feedback)),
     moveQuestion: (questionId, direction) =>
       runAction(() => moveQuestion(questionId, direction)),
     deleteQuestion: (questionId) =>

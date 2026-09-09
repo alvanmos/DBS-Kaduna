@@ -644,10 +644,11 @@ export async function completeLessonAndNotify(studentId, lessonNumber) {
   );
 }
 
-export async function saveAdminSubmissionComment(submissionId, feedback) {
+export async function saveAdminSubmissionReview(submissionId, score, feedback) {
   return throwIfError(
-    await supabase.rpc("admin_comment_on_submission", {
+    await supabase.rpc("admin_review_submission", {
       input_submission_id: submissionId,
+      input_score: score === "" ? null : Number(score),
       input_feedback: feedback,
     }),
   );

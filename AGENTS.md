@@ -28,7 +28,7 @@ When implementing from a selected generated mock, treat that image as the source
 - Keep the Students directory searchable, filterable, and paginated; administrators can select active students and send them a private dashboard notice in one action.
 - Surface each student with gradeable submissions awaiting marking alongside the responsible instructor on the administration dashboard.
 - Provide an administration Submission marking workspace that lets administrators complete pending lessons and immediately sends the approved DBS Kaduna completion notice to the responsible volunteer instructor.
-- Let administrators open each pending lesson's gradeable answers and save per-answer feedback before completing the lesson.
+- Let administrators open each pending lesson's gradeable answers and save per-answer marks and feedback before completing the lesson.
 - Support student, instructor, lesson, question, certificate, report, and news management.
 - Keep all 26 lesson upload slots visible and identify lesson PDFs as protected content.
 - Treat the current browser-persisted data and password setup as prototype behavior only.
