@@ -6,6 +6,7 @@ export const adminSections = [
   { id: "instructors", label: "Instructors" },
   { id: "lessons", label: "Lessons" },
   { id: "questions", label: "Questions" },
+  { id: "marking", label: "Submission marking" },
   { id: "certificates", label: "Certificates" },
   { id: "reports", label: "Reports" },
   { id: "recruitment", label: "QR Campaigns" },
