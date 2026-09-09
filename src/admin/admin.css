@@ -1142,11 +1142,10 @@
   font-weight: 750;
 }
 
+.admin-answer-review-card input,
 .admin-answer-review-card textarea {
   width: 100%;
-  min-height: 100px;
   padding: 10px 11px;
-  resize: vertical;
   color: var(--admin-ink);
   background: #ffffff;
   border: 1px solid #cbd6e2;
@@ -1155,6 +1154,12 @@
   line-height: 1.45;
 }
 
+.admin-answer-review-card textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.admin-answer-review-card input:focus,
 .admin-answer-review-card textarea:focus {
   border-color: var(--admin-blue);
   outline: 0;

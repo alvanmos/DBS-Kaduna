@@ -292,10 +292,11 @@ function OutstandingMarkingPanel({ students, instructors, questions, submissions
   );
 }
 
-function SubmissionMarking({ students, instructors, questions, submissions, onCompleteLesson, onSaveSubmissionComment, onNotify }) {
+function SubmissionMarking({ students, instructors, questions, submissions, onCompleteLesson, onSaveSubmissionReview, onNotify }) {
   const [pendingAction, setPendingAction] = useState("");
   const [activeReviewKey, setActiveReviewKey] = useState("");
   const [commentDrafts, setCommentDrafts] = useState({});
+  const [scoreDrafts, setScoreDrafts] = useState({});
   const [savingCommentId, setSavingCommentId] = useState("");
   const studentsById = new Map(students.map((student) => [student.id, student]));
   const instructorsById = new Map(instructors.map((instructor) => [instructor.id, instructor]));
@@ -343,18 +344,24 @@ function SubmissionMarking({ students, instructors, questions, submissions, onCo
         row.submissions.map((submission) => [submission.id, submission.feedback ?? ""]),
       ),
     );
+    setScoreDrafts(
+      Object.fromEntries(
+        row.submissions.map((submission) => [submission.id, submission.score ?? ""]),
+      ),
+    );
   }
 
-  async function saveComment(submission) {
+  async function saveReview(submission) {
     const feedback = commentDrafts[submission.id]?.trim() ?? "";
-    if (!feedback) {
-      onNotify("Enter a comment before saving it.", "error");
+    const score = scoreDrafts[submission.id] ?? "";
+    if (score === "" && !feedback) {
+      onNotify("Enter a mark or comment before saving the review.", "error");
       return;
     }
     setSavingCommentId(submission.id);
     try {
-      await onSaveSubmissionComment(submission.id, feedback);
-      onNotify("Administrator comment saved.");
+      await onSaveSubmissionReview(submission.id, score, feedback);
+      onNotify("Administrator review saved.");
     } catch (error) {
       onNotify(readableError(error), "error");
     } finally {
@@ -456,7 +463,7 @@ function SubmissionMarking({ students, instructors, questions, submissions, onCo
           <div className="admin-panel-heading">
             <div>
               <h3 id="admin-answer-review-title">{activeReview.student.name} — Lesson {activeReview.lessonNumber} answers</h3>
-              <p>Read each response and save a comment for the student before completing the lesson.</p>
+              <p>Read each response, add a mark out of 100, and save helpful feedback before completing the lesson.</p>
             </div>
             <button className="admin-secondary-button" type="button" onClick={() => setActiveReviewKey("")}>Close review</button>
           </div>
@@ -475,6 +482,19 @@ function SubmissionMarking({ students, instructors, questions, submissions, onCo
                       <p>{answerText(submission.answer) || "No answer was submitted."}</p>
                     </div>
                     <label>
+                      Mark out of 100
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        value={scoreDrafts[submission.id] ?? ""}
+                        onChange={(event) => setScoreDrafts((current) => ({ ...current, [submission.id]: event.target.value }))}
+                        placeholder="e.g. 85"
+                        disabled={isSaving}
+                      />
+                    </label>
+                    <label>
                       Administrator comment
                       <textarea
                         rows="4"
@@ -488,11 +508,11 @@ function SubmissionMarking({ students, instructors, questions, submissions, onCo
                     <button
                       className="admin-primary-button"
                       type="button"
-                      disabled={isSaving || !(commentDrafts[submission.id] ?? "").trim()}
-                      onClick={() => saveComment(submission)}
+                      disabled={isSaving || ((scoreDrafts[submission.id] ?? "") === "" && !(commentDrafts[submission.id] ?? "").trim())}
+                      onClick={() => saveReview(submission)}
                     >
                       <FloppyDisk aria-hidden="true" size={18} weight="bold" />
-                      {isSaving ? "Saving comment..." : "Save comment"}
+                      {isSaving ? "Saving review..." : "Save mark and comment"}
                     </button>
                   </article>
                 );
@@ -3032,7 +3052,7 @@ export function AdminDashboard({
         questions={data.questions}
         submissions={data.submissions}
         onCompleteLesson={actions.completeLesson}
-        onSaveSubmissionComment={actions.saveSubmissionComment}
+        onSaveSubmissionReview={actions.saveSubmissionReview}
         onNotify={notify}
       />
     );
