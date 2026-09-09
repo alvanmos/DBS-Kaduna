@@ -9,6 +9,7 @@ import "./styles.css";
 const isNewsRoute =
   window.location.pathname === "/news" ||
   window.location.pathname.startsWith("/news/");
+const isLiteratureRoute = window.location.pathname === "/literature" || window.location.pathname.startsWith("/literature/");
 const isAdminRoute =
   window.location.pathname === "/admin" ||
   window.location.pathname.startsWith("/admin/") ||
@@ -40,9 +41,18 @@ const LearningPortal = React.lazy(() =>
     default: module.LearningPortal,
   })),
 );
+const LiteratureNetwork = React.lazy(() =>
+  import("./literature/LiteratureNetwork.jsx").then((module) => ({
+    default: module.LiteratureNetwork,
+  })),
+);
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    {isAdminRoute ? (
+    {isLiteratureRoute ? (
+      <React.Suspense fallback={null}>
+        <LiteratureNetwork />
+      </React.Suspense>
+    ) : isAdminRoute ? (
       <React.Suspense fallback={null}>
         <AdminPortal />
       </React.Suspense>

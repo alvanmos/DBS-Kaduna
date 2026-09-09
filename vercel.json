@@ -61,6 +61,14 @@
     {
       "source": "/news/:path*",
       "destination": "/index.html"
+    },
+    {
+      "source": "/literature",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/literature/:path*",
+      "destination": "/index.html"
     }
   ]
 }
