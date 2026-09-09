@@ -635,6 +635,15 @@ export async function updateQuestionType(questionId, type) {
   );
 }
 
+export async function completeLessonAndNotify(studentId, lessonNumber) {
+  return throwIfError(
+    await supabase.rpc("admin_complete_lesson_and_notify", {
+      input_student_id: studentId,
+      input_lesson_number: lessonNumber,
+    }),
+  );
+}
+
 export async function moveQuestion(questionId, direction) {
   throwIfError(
     await supabase.rpc("admin_move_question", {

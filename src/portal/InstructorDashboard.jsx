@@ -60,6 +60,16 @@ function formatMessageTime(value) {
   }).format(new Date(value));
 }
 
+function MessageBody({ body }) {
+  return String(body ?? "")
+    .split(/(\*\*[^*]+\*\*)/g)
+    .map((part, index) =>
+      part.startsWith("**") && part.endsWith("**")
+        ? <strong key={index}>{part.slice(2, -2)}</strong>
+        : part,
+    );
+}
+
 function alphabetizeStudents(students) {
   return [...students]
     .sort((first, second) =>
@@ -465,7 +475,7 @@ export function InstructorDashboard({ profile, onSignOut }) {
                             key={threadMessage.id}
                           >
                             <strong>{isOwnMessage ? "You" : selectedStudent.full_name}</strong>
-                            <p>{threadMessage.body}</p>
+                            <p><MessageBody body={threadMessage.body} /></p>
                             <small>{formatMessageTime(threadMessage.created_at)}</small>
                           </article>
                         );
@@ -529,7 +539,7 @@ export function InstructorDashboard({ profile, onSignOut }) {
                             key={threadMessage.id}
                           >
                             <strong>{senderName}</strong>
-                            <p>{threadMessage.body}</p>
+                            <p><MessageBody body={threadMessage.body} /></p>
                             <small>{formatMessageTime(threadMessage.created_at)}</small>
                           </article>
                         );

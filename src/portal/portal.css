@@ -1929,6 +1929,7 @@
   margin: 7px 0;
   font-size: 0.77rem;
   line-height: 1.55;
+  white-space: pre-line;
 }
 
 .portal-message-card small {

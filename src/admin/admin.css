@@ -1054,6 +1054,21 @@
   font-size: 0.7rem;
 }
 
+.admin-marking-panel {
+  margin-top: 20px;
+}
+
+.admin-marking-table th:last-child,
+.admin-marking-table td:last-child {
+  min-width: 190px;
+}
+
+.admin-marking-complete {
+  min-width: 178px;
+  justify-content: center;
+  white-space: nowrap;
+}
+
 .admin-cell-note {
   margin-top: 6px !important;
 }

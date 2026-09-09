@@ -47,6 +47,7 @@ const sectionIcons = {
   instructors: UsersThree,
   lessons: BookOpenText,
   questions: Question,
+  marking: ClipboardText,
   certificates: Certificate,
   reports: ChartBar,
   news: Newspaper,
@@ -61,6 +62,7 @@ const pageHeadingIcons = {
   "Instructor management": UsersThree,
   "Lesson management": BookOpenText,
   "Question management": Question,
+  "Submission marking": ClipboardText,
   Certificates: Certificate,
   Reports: ChartBar,
   Recruitment: QrCode,
@@ -289,6 +291,126 @@ function OutstandingMarkingPanel({ students, instructors, questions, submissions
   );
 }
 
+function SubmissionMarking({ students, instructors, questions, submissions, onCompleteLesson, onNotify }) {
+  const [pendingAction, setPendingAction] = useState("");
+  const studentsById = new Map(students.map((student) => [student.id, student]));
+  const instructorsById = new Map(instructors.map((instructor) => [instructor.id, instructor]));
+  const questionsById = new Map(questions.map((question) => [question.id, question]));
+  const pendingLessons = new Map();
+
+  submissions
+    .filter((submission) => submission.needsMarking)
+    .forEach((submission) => {
+      const student = studentsById.get(submission.studentId);
+      const question = questionsById.get(submission.questionId);
+      if (!student || !question) return;
+      const instructor =
+        instructorsById.get(submission.markerInstructorId) ??
+        instructorsById.get(student.instructorId) ??
+        null;
+      const key = `${student.id}:${question.lesson}`;
+      const current = pendingLessons.get(key) ?? {
+        key,
+        student,
+        instructor,
+        lessonNumber: question.lesson,
+        count: 0,
+        latestSubmission: "",
+      };
+      current.count += 1;
+      if (submission.submittedAt > current.latestSubmission) {
+        current.latestSubmission = submission.submittedAt;
+      }
+      pendingLessons.set(key, current);
+    });
+
+  const rows = [...pendingLessons.values()].sort(
+    (first, second) =>
+      new Date(second.latestSubmission || 0) - new Date(first.latestSubmission || 0),
+  );
+
+  async function completeLesson(row) {
+    setPendingAction(row.key);
+    try {
+      await onCompleteLesson(row.student.id, row.lessonNumber);
+      onNotify(
+        `Lesson ${row.lessonNumber} was marked completed and the instructor has been notified.`,
+      );
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    } finally {
+      setPendingAction("");
+    }
+  }
+
+  return (
+    <>
+      <PageHeading
+        eyebrow="Submission marking"
+        title="Pending lesson submissions"
+        description="Complete a submitted lesson when administration has finished its review. The assigned volunteer instructor receives the approved DBS Kaduna notice immediately."
+      />
+      <section className="admin-panel admin-marking-panel">
+        <div className="admin-panel-heading">
+          <div>
+            <h3>Lessons ready for an administrative decision</h3>
+            <p>Only gradeable answers still awaiting review appear here. Completing a lesson marks its submitted answers and unlocks the next lesson.</p>
+          </div>
+          <StatusBadge tone={rows.length ? "gold" : "green"}>{rows.length} lesson{rows.length === 1 ? "" : "s"}</StatusBadge>
+        </div>
+        {rows.length ? (
+          <div className="admin-table-wrap">
+            <table className="admin-table admin-marking-table">
+              <caption className="sr-only">Submitted lessons awaiting administrative completion</caption>
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Lesson</th>
+                  <th>Pending answers</th>
+                  <th>Volunteer instructor</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => {
+                  const isPending = pendingAction === row.key;
+                  return (
+                    <tr key={row.key}>
+                      <td><strong>{row.student.name}</strong><small>Student {row.student.serial}</small></td>
+                      <td><strong>Lesson {row.lessonNumber}</strong><small>{formatMessageTime(row.latestSubmission)}</small></td>
+                      <td><strong>{row.count} answer{row.count === 1 ? "" : "s"}</strong><small>Awaiting marking</small></td>
+                      <td>
+                        {row.instructor ? (
+                          <><strong>{row.instructor.name}</strong><small>{row.instructor.email || "Active instructor"}</small></>
+                        ) : (
+                          <StatusBadge tone="red">Assign an instructor first</StatusBadge>
+                        )}
+                      </td>
+                      <td>
+                        <button
+                          className="admin-primary-button admin-marking-complete"
+                          type="button"
+                          disabled={!row.instructor || isPending}
+                          onClick={() => completeLesson(row)}
+                        >
+                          <CheckCircle aria-hidden="true" size={18} weight="bold" />
+                          {isPending ? "Completing..." : "Mark lesson completed"}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyState>There are no gradeable submissions awaiting an administrative decision.</EmptyState>
+        )}
+      </section>
+    </>
+  );
+}
+
 function DashboardSummary({ students, instructors, questions, submissions }) {
   const [studentPage, setStudentPage] = useState(1);
   const studentPageSize = 12;
@@ -318,10 +440,7 @@ function DashboardSummary({ students, instructors, questions, submissions }) {
       instructors,
       (instructor) => instructor.status === "Inactive",
     ),
-    unmarked: instructors.reduce(
-      (total, instructor) => total + instructor.unmarked,
-      0,
-    ),
+    unmarked: submissions.filter((submission) => submission.needsMarking).length,
     graduationRequests: instructors.reduce(
       (total, instructor) => total + instructor.graduationRequests,
       0,
@@ -2734,6 +2853,7 @@ export function AdminDashboard({
       ),
       lessons: countWhere(data.lessons, (lesson) => lesson.status !== "Uploaded"),
       questions: data.questions.length,
+      marking: data.submissions.filter((submission) => submission.needsMarking).length,
       certificates: data.certificates.length,
       recruitment: countWhere(
         data.recruitmentCampaigns,
@@ -2808,6 +2928,17 @@ export function AdminDashboard({
         onUpdateQuestionType={actions.updateQuestionType}
         onMoveQuestion={actions.moveQuestion}
         onDeleteQuestion={actions.deleteQuestion}
+        onNotify={notify}
+      />
+    );
+  } else if (activeSection === "marking") {
+    content = (
+      <SubmissionMarking
+        students={data.students}
+        instructors={data.instructors}
+        questions={data.questions}
+        submissions={data.submissions}
+        onCompleteLesson={actions.completeLesson}
         onNotify={notify}
       />
     );
