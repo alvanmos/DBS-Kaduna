@@ -645,12 +645,24 @@ export async function completeLessonAndNotify(studentId, lessonNumber) {
 }
 
 export async function saveAdminSubmissionReview(submissionId, score, feedback) {
+  const numericScore = score === "" ? null : Number(score);
+  if (
+    numericScore !== null &&
+    (!Number.isFinite(numericScore) || numericScore < 0 || numericScore > 100)
+  ) {
+    throw new Error("Enter a mark between 0 and 100.");
+  }
+
   return throwIfError(
-    await supabase.rpc("admin_review_submission", {
-      input_submission_id: submissionId,
-      input_score: score === "" ? null : Number(score),
-      input_feedback: feedback,
-    }),
+    await supabase
+      .from("submissions")
+      .update({
+        score: numericScore,
+        feedback: feedback.trim() || null,
+      })
+      .eq("id", submissionId)
+      .select("id")
+      .single(),
   );
 }
 
