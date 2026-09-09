@@ -363,6 +363,9 @@ export function App() {
           <a className="site-nav__link" href="#how-it-works">
             How It Works
           </a>
+          <a className="site-nav__link" href="/literature">
+            Literature Network
+          </a>
           <a className="site-nav__link" href={instructorRegistration}>
             Become an Instructor
           </a>
