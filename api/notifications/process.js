@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 
-const SUPPORTED_VARIABLES = new Set(["student_first_name", "student_full_name", "student_registration_number", "instructor_name", "previous_instructor_name", "new_instructor_name", "lesson_number", "lesson_title", "class_date", "class_time", "programme_name", "dashboard_link", "submission_link", "question_link", "class_link", "certificate_link", "reactivation_link"]);
+const SUPPORTED_VARIABLES = new Set(["student_first_name", "student_full_name", "student_registration_number", "instructor_name", "previous_instructor_name", "new_instructor_name", "lesson_number", "lesson_title", "class_date", "class_time", "programme_name", "dashboard_link", "submission_link", "question_link", "class_link", "certificate_link", "reactivation_link", "request_reference", "literature_title", "quantity"]);
 const MAX_ITEMS = 25;
 
 function serviceClient() {
@@ -36,6 +36,10 @@ export default async function handler(req, res) {
   const supabase = serviceClient();
   const { data: inactivated, error: inactivityError } = await supabase.rpc("process_student_inactivity", { input_inactivity_days: 60 });
   if (inactivityError) return res.status(500).json({ error: inactivityError.message });
+  const { error: reminderError } = await supabase.rpc("onevoice_queue_pending_request_reminders");
+  if (reminderError && !/function.*does not exist|schema cache/i.test(reminderError.message || "")) {
+    return res.status(500).json({ error: reminderError.message });
+  }
   if (!process.env.RESEND_API_KEY || process.env.DISCOVER_BIBLE_SCHOOL_EMAIL_ENABLED !== "true") return res.status(503).json({ error: "Automated email delivery is disabled.", inactivated: inactivated?.length ?? 0 });
   if (!process.env.DISCOVER_BIBLE_SCHOOL_EMAIL_FROM || !appUrl()) return res.status(503).json({ error: "Automated email delivery is not fully configured.", inactivated: inactivated?.length ?? 0 });
   const { data: queue, error } = await supabase.rpc("email_claim_notification_queue", { input_limit: MAX_ITEMS });

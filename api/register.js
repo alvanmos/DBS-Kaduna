@@ -105,6 +105,87 @@ function validateForm(fields, formData) {
   }
 }
 
+function validEmail(value) {
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(value ?? "").trim());
+}
+
+async function registerLiteratureDonor(req, res, supabase, payload) {
+  const sourceType = String(payload.sourceType ?? "").trim();
+  const displayName = String(payload.displayName ?? "").trim();
+  const email = String(payload.email ?? "").trim().toLowerCase();
+  const state = String(payload.state ?? "").trim();
+  const lgaCity = String(payload.lgaCity ?? "").trim();
+  if (
+    !["individual", "church", "ministry", "institution", "organization"].includes(sourceType) ||
+    displayName.length < 2 ||
+    !validEmail(email) ||
+    !state ||
+    !lgaCity
+  ) {
+    return send(res, 400, {
+      error: "Provide a valid donor type, name, email, state, and LGA/city.",
+    });
+  }
+
+  const { data: existing } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("email", email)
+    .maybeSingle();
+  if (existing) {
+    return send(res, 409, {
+      error: "An account already uses this email address. Please sign in instead.",
+    });
+  }
+
+  const { data: invitation, error: invitationError } =
+    await supabase.auth.admin.inviteUserByEmail(email, {
+      data: { full_name: displayName, role: "donor" },
+      redirectTo: `${appUrl(req)}/literature/login?type=invite`,
+    });
+  if (invitationError || !invitation.user) {
+    return send(res, 400, {
+      error:
+        invitationError?.message ||
+        "The secure donor invitation could not be created.",
+    });
+  }
+
+  const profileId = invitation.user.id;
+  const { error: profileError } = await supabase.from("profiles").upsert({
+    id: profileId,
+    email,
+    full_name: displayName,
+    phone: String(payload.whatsapp ?? "").trim() || null,
+    role: "donor",
+    status: "active",
+  });
+  if (profileError) {
+    await supabase.auth.admin.deleteUser(profileId);
+    return send(res, 500, { error: profileError.message });
+  }
+
+  const { error: sourceError } = await supabase.from("literature_sources").insert({
+    profile_id: profileId,
+    source_type: sourceType,
+    display_name: displayName,
+    contact_name: String(payload.contactName ?? "").trim() || null,
+    email,
+    whatsapp: String(payload.whatsapp ?? "").trim() || null,
+    state,
+    lga_city: lgaCity,
+    general_location: String(payload.generalLocation ?? "").trim() || null,
+    private_address: String(payload.privateAddress ?? "").trim() || null,
+    is_public_location: sourceType === "church",
+  });
+  if (sourceError) {
+    await supabase.auth.admin.deleteUser(profileId);
+    return send(res, 500, { error: sourceError.message });
+  }
+
+  return send(res, 201, { ok: true });
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -160,8 +241,13 @@ export default async function handler(req, res) {
   });
   if (req.method === "GET") return reactivateStudent(req, res, supabase);
 
+  const payload = req.body ?? {};
+  if (payload.registrationType === "literature_donor") {
+    return registerLiteratureDonor(req, res, supabase, payload);
+  }
+
   const { recruitmentKind, campaignSlug = "", formData = {}, website = "" } =
-    req.body ?? {};
+    payload;
   if (website) return send(res, 200, { ok: true });
   if (!["student", "volunteer_instructor"].includes(recruitmentKind)) {
     return send(res, 400, { error: "Invalid registration type." });
