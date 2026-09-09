@@ -636,12 +636,119 @@ export async function updateQuestionType(questionId, type) {
 }
 
 export async function completeLessonAndNotify(studentId, lessonNumber) {
-  return throwIfError(
-    await supabase.rpc("admin_complete_lesson_and_notify", {
-      input_student_id: studentId,
-      input_lesson_number: lessonNumber,
-    }),
+  const student = throwIfError(
+    await supabase
+      .from("students")
+      .select("id, full_name, instructor_id")
+      .eq("id", studentId)
+      .single(),
   );
+  if (!student.instructor_id) {
+    throw new Error("Assign a volunteer instructor before completing this lesson.");
+  }
+
+  const lessonQuestions = throwIfError(
+    await supabase
+      .from("questions")
+      .select("id, kind")
+      .eq("lesson_number", lessonNumber),
+  );
+  const questionIds = lessonQuestions.map((question) => question.id);
+  const gradeableQuestionIds = lessonQuestions
+    .filter((question) => question.kind !== "thought")
+    .map((question) => question.id);
+  if (!gradeableQuestionIds.length) {
+    throw new Error("This lesson has no gradeable questions.");
+  }
+
+  const gradeableSubmissions = throwIfError(
+    await supabase
+      .from("submissions")
+      .select("id, score")
+      .eq("student_id", studentId)
+      .eq("status", "submitted")
+      .in("question_id", gradeableQuestionIds),
+  );
+  if (!gradeableSubmissions.length) {
+    throw new Error("There are no gradeable submissions awaiting completion for this lesson.");
+  }
+
+  const scoredSubmissions = gradeableSubmissions.filter(
+    (submission) => submission.score !== null && submission.score !== undefined,
+  );
+  const averageScore = scoredSubmissions.length
+    ? scoredSubmissions.reduce((total, submission) => total + Number(submission.score), 0) /
+      scoredSubmissions.length
+    : null;
+  const completedAt = new Date().toISOString();
+
+  throwIfError(
+    await supabase.from("student_lesson_progress").upsert(
+      {
+        student_id: studentId,
+        lesson_number: lessonNumber,
+        status: "completed",
+        score: averageScore,
+        completed_at: completedAt,
+        is_locked: false,
+      },
+      { onConflict: "student_id,lesson_number" },
+    ),
+  );
+
+  throwIfError(
+    await supabase
+      .from("submissions")
+      .update({
+        status: "marked",
+        marked_at: completedAt,
+        marker_instructor_id: student.instructor_id,
+      })
+      .eq("student_id", studentId)
+      .eq("status", "submitted")
+      .in("question_id", questionIds),
+  );
+
+  if (lessonNumber < 26) {
+    const nextLesson = lessonNumber + 1;
+    const updatedProgress = throwIfError(
+      await supabase
+        .from("student_lesson_progress")
+        .update({ is_locked: false })
+        .eq("student_id", studentId)
+        .eq("lesson_number", nextLesson)
+        .select("id"),
+    );
+    if (!updatedProgress.length) {
+      throwIfError(
+        await supabase.from("student_lesson_progress").insert({
+          student_id: studentId,
+          lesson_number: nextLesson,
+          status: "not_started",
+          is_locked: false,
+        }),
+      );
+    }
+  }
+
+  const notificationBody = `Greetings in the name of our Lord and Saviour Jesus Christ.
+
+To ensure the continued progress of our students, the **Discover Bible School (DBS) Kaduna Administration** has reviewed your student’s submission and marked **Lesson ${lessonNumber}** as **completed** for **${student.full_name}**.
+
+Instructors are kindly encouraged to assess and provide feedback on their students’ lesson submissions promptly to ensure steady progress through the course.
+
+Thank you for your faithful service and commitment to helping our students grow in the knowledge of God’s Word.
+
+**DBS Kaduna Administration**`;
+
+  const notification = await supabase.rpc("admin_send_instructor_message", {
+    input_instructor_id: student.instructor_id,
+    input_body: notificationBody,
+  });
+
+  return {
+    notificationError: notification.error?.message ?? "",
+  };
 }
 
 export async function saveAdminSubmissionReview(submissionId, score, feedback) {

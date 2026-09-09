@@ -372,10 +372,17 @@ function SubmissionMarking({ students, instructors, questions, submissions, onCo
   async function completeLesson(row) {
     setPendingAction(row.key);
     try {
-      await onCompleteLesson(row.student.id, row.lessonNumber);
-      onNotify(
-        `Lesson ${row.lessonNumber} was marked completed and the instructor has been notified.`,
-      );
+      const result = await onCompleteLesson(row.student.id, row.lessonNumber);
+      if (result?.notificationError) {
+        onNotify(
+          `Lesson ${row.lessonNumber} was marked completed, but the instructor notice could not be sent: ${result.notificationError}`,
+          "error",
+        );
+      } else {
+        onNotify(
+          `Lesson ${row.lessonNumber} was marked completed and the instructor has been notified.`,
+        );
+      }
     } catch (error) {
       onNotify(readableError(error), "error");
     } finally {
