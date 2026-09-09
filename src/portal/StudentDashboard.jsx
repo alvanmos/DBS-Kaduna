@@ -636,7 +636,7 @@ export function StudentDashboard({ profile, onSignOut, onDeleteAccount }) {
                   <h3>{activeQuestion.prompt}</h3>
                   <label className="sr-only" htmlFor={`student-answer-${activeQuestion.id}`}>Your answer to question {activeQuestionIndex + 1}</label>
                   <textarea id={`student-answer-${activeQuestion.id}`} rows="6" value={answers[activeQuestion.id] ?? ""} onChange={(event) => setAnswers((current) => ({ ...current, [activeQuestion.id]: event.target.value }))} disabled={!canAnswer || !needsAnswer} required />
-                  {activeSubmission?.feedback && <div className="portal-feedback"><strong>Instructor comment</strong><p>{activeSubmission.feedback}</p><span>Score: {activeSubmission.score ?? "Pending"}</span></div>}
+                  {activeSubmission?.feedback && <div className="portal-feedback"><strong>Reviewer comment</strong><p>{activeSubmission.feedback}</p><span>Score: {activeSubmission.score ?? "Pending"}</span></div>}
                   <div className="portal-question-navigation">
                     {canAnswer && needsAnswer ? <button className="portal-primary-button" type="submit" disabled={isSubmittingQuestion}>{isSubmittingQuestion ? "Submitting answer..." : "Submit answer"}</button> : <span className="portal-question-submitted">Answer submitted</span>}
                     {hasNextQuestion && !needsAnswer && <button className="portal-secondary-button portal-next-question" type="button" onClick={() => { setActiveQuestionIndex((index) => index + 1); setLessonMessage(""); }}>Next Question <span aria-hidden="true">→</span></button>}

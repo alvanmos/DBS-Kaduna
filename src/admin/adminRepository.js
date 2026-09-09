@@ -644,6 +644,15 @@ export async function completeLessonAndNotify(studentId, lessonNumber) {
   );
 }
 
+export async function saveAdminSubmissionComment(submissionId, feedback) {
+  return throwIfError(
+    await supabase.rpc("admin_comment_on_submission", {
+      input_submission_id: submissionId,
+      input_feedback: feedback,
+    }),
+  );
+}
+
 export async function moveQuestion(questionId, direction) {
   throwIfError(
     await supabase.rpc("admin_move_question", {

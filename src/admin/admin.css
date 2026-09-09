@@ -1069,6 +1069,102 @@
   white-space: nowrap;
 }
 
+.admin-marking-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-marking-review {
+  min-width: 148px;
+  white-space: nowrap;
+}
+
+.admin-marking-review-panel {
+  margin-top: 20px;
+}
+
+.admin-answer-review-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-answer-review-card {
+  padding: 18px;
+  display: grid;
+  gap: 12px;
+  background: #f9fbfd;
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+}
+
+.admin-answer-review-card__number {
+  margin: 0;
+  color: var(--admin-gold);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-answer-review-card h4 {
+  margin: -4px 0 0;
+  color: var(--admin-navy);
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.admin-answer-review-card__answer {
+  padding: 13px;
+  color: var(--admin-ink);
+  background: #ffffff;
+  border-left: 3px solid var(--admin-gold);
+  border-radius: 0 8px 8px 0;
+}
+
+.admin-answer-review-card__answer strong {
+  color: var(--admin-navy);
+  font-size: 0.78rem;
+}
+
+.admin-answer-review-card__answer p {
+  margin: 6px 0 0;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+
+.admin-answer-review-card label {
+  display: grid;
+  gap: 7px;
+  color: var(--admin-ink);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.admin-answer-review-card textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 10px 11px;
+  resize: vertical;
+  color: var(--admin-ink);
+  background: #ffffff;
+  border: 1px solid #cbd6e2;
+  border-radius: 8px;
+  font: inherit;
+  line-height: 1.45;
+}
+
+.admin-answer-review-card textarea:focus {
+  border-color: var(--admin-blue);
+  outline: 0;
+  box-shadow: 0 0 0 4px rgb(12 77 162 / 11%);
+}
+
+.admin-answer-review-card .admin-primary-button {
+  justify-self: start;
+}
+
 .admin-cell-note {
   margin-top: 6px !important;
 }
@@ -2810,6 +2906,10 @@
 
   .admin-lesson-card {
     grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .admin-answer-review-list {
+    grid-template-columns: 1fr;
   }
 
   .admin-lesson-card .admin-status {
