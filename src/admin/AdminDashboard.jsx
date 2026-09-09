@@ -13,6 +13,7 @@ import {
   ClipboardText,
   Copy,
   DownloadSimple,
+  Eye,
   FilePdf,
   FloppyDisk,
   Gauge,
@@ -291,8 +292,11 @@ function OutstandingMarkingPanel({ students, instructors, questions, submissions
   );
 }
 
-function SubmissionMarking({ students, instructors, questions, submissions, onCompleteLesson, onNotify }) {
+function SubmissionMarking({ students, instructors, questions, submissions, onCompleteLesson, onSaveSubmissionComment, onNotify }) {
   const [pendingAction, setPendingAction] = useState("");
+  const [activeReviewKey, setActiveReviewKey] = useState("");
+  const [commentDrafts, setCommentDrafts] = useState({});
+  const [savingCommentId, setSavingCommentId] = useState("");
   const studentsById = new Map(students.map((student) => [student.id, student]));
   const instructorsById = new Map(instructors.map((instructor) => [instructor.id, instructor]));
   const questionsById = new Map(questions.map((question) => [question.id, question]));
@@ -316,8 +320,10 @@ function SubmissionMarking({ students, instructors, questions, submissions, onCo
         lessonNumber: question.lesson,
         count: 0,
         latestSubmission: "",
+        submissions: [],
       };
       current.count += 1;
+      current.submissions.push(submission);
       if (submission.submittedAt > current.latestSubmission) {
         current.latestSubmission = submission.submittedAt;
       }
@@ -328,6 +334,33 @@ function SubmissionMarking({ students, instructors, questions, submissions, onCo
     (first, second) =>
       new Date(second.latestSubmission || 0) - new Date(first.latestSubmission || 0),
   );
+  const activeReview = rows.find((row) => row.key === activeReviewKey) ?? null;
+
+  function openReview(row) {
+    setActiveReviewKey(row.key);
+    setCommentDrafts(
+      Object.fromEntries(
+        row.submissions.map((submission) => [submission.id, submission.feedback ?? ""]),
+      ),
+    );
+  }
+
+  async function saveComment(submission) {
+    const feedback = commentDrafts[submission.id]?.trim() ?? "";
+    if (!feedback) {
+      onNotify("Enter a comment before saving it.", "error");
+      return;
+    }
+    setSavingCommentId(submission.id);
+    try {
+      await onSaveSubmissionComment(submission.id, feedback);
+      onNotify("Administrator comment saved.");
+    } catch (error) {
+      onNotify(readableError(error), "error");
+    } finally {
+      setSavingCommentId("");
+    }
+  }
 
   async function completeLesson(row) {
     setPendingAction(row.key);
@@ -387,15 +420,26 @@ function SubmissionMarking({ students, instructors, questions, submissions, onCo
                         )}
                       </td>
                       <td>
-                        <button
-                          className="admin-primary-button admin-marking-complete"
-                          type="button"
-                          disabled={!row.instructor || isPending}
-                          onClick={() => completeLesson(row)}
-                        >
-                          <CheckCircle aria-hidden="true" size={18} weight="bold" />
-                          {isPending ? "Completing..." : "Mark lesson completed"}
-                        </button>
+                        <div className="admin-marking-actions">
+                          <button
+                            className="admin-secondary-button admin-marking-review"
+                            type="button"
+                            aria-expanded={activeReviewKey === row.key}
+                            onClick={() => openReview(row)}
+                          >
+                            <Eye aria-hidden="true" size={18} weight="bold" />
+                            Review answers
+                          </button>
+                          <button
+                            className="admin-primary-button admin-marking-complete"
+                            type="button"
+                            disabled={!row.instructor || isPending}
+                            onClick={() => completeLesson(row)}
+                          >
+                            <CheckCircle aria-hidden="true" size={18} weight="bold" />
+                            {isPending ? "Completing..." : "Mark lesson completed"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -407,6 +451,55 @@ function SubmissionMarking({ students, instructors, questions, submissions, onCo
           <EmptyState>There are no gradeable submissions awaiting an administrative decision.</EmptyState>
         )}
       </section>
+      {activeReview && (
+        <section className="admin-panel admin-marking-review-panel" aria-labelledby="admin-answer-review-title">
+          <div className="admin-panel-heading">
+            <div>
+              <h3 id="admin-answer-review-title">{activeReview.student.name} — Lesson {activeReview.lessonNumber} answers</h3>
+              <p>Read each response and save a comment for the student before completing the lesson.</p>
+            </div>
+            <button className="admin-secondary-button" type="button" onClick={() => setActiveReviewKey("")}>Close review</button>
+          </div>
+          <div className="admin-answer-review-list">
+            {[...activeReview.submissions]
+              .sort((first, second) => (questionsById.get(first.questionId)?.order ?? 0) - (questionsById.get(second.questionId)?.order ?? 0))
+              .map((submission, index) => {
+                const question = questionsById.get(submission.questionId);
+                const isSaving = savingCommentId === submission.id;
+                return (
+                  <article className="admin-answer-review-card" key={submission.id}>
+                    <p className="admin-answer-review-card__number">Question {index + 1}</p>
+                    <h4>{question?.prompt ?? "Question unavailable"}</h4>
+                    <div className="admin-answer-review-card__answer">
+                      <strong>Student answer</strong>
+                      <p>{answerText(submission.answer) || "No answer was submitted."}</p>
+                    </div>
+                    <label>
+                      Administrator comment
+                      <textarea
+                        rows="4"
+                        value={commentDrafts[submission.id] ?? ""}
+                        maxLength="2000"
+                        onChange={(event) => setCommentDrafts((current) => ({ ...current, [submission.id]: event.target.value }))}
+                        placeholder="Add clear, helpful feedback for the student."
+                        disabled={isSaving}
+                      />
+                    </label>
+                    <button
+                      className="admin-primary-button"
+                      type="button"
+                      disabled={isSaving || !(commentDrafts[submission.id] ?? "").trim()}
+                      onClick={() => saveComment(submission)}
+                    >
+                      <FloppyDisk aria-hidden="true" size={18} weight="bold" />
+                      {isSaving ? "Saving comment..." : "Save comment"}
+                    </button>
+                  </article>
+                );
+              })}
+          </div>
+        </section>
+      )}
     </>
   );
 }
@@ -2939,6 +3032,7 @@ export function AdminDashboard({
         questions={data.questions}
         submissions={data.submissions}
         onCompleteLesson={actions.completeLesson}
+        onSaveSubmissionComment={actions.saveSubmissionComment}
         onNotify={notify}
       />
     );
