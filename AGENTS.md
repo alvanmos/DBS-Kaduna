@@ -74,3 +74,5 @@ When implementing from a selected generated mock, treat that image as the source
 - Support bidirectional messaging between each student and the assigned instructor inside the learning portal.
 - Support bidirectional messaging between administration and volunteer instructors inside the administration and instructor portals.
 - Keep the landing-page "How it works" section aligned to the eight DBS Kaduna study-journey steps supplied by the user.
+
+- Allow existing DBS account emails to register as literature donors after account verification, preserving their original role and learning access.

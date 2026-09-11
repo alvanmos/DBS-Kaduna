@@ -127,17 +127,25 @@ async function registerLiteratureDonor(req, res, supabase, payload) {
     });
   }
 
-  const { data: existing } = await supabase
+  const { data: existing, error: lookupError } = await supabase
     .from("profiles")
     .select("id")
     .eq("email", email)
     .maybeSingle();
+  if (lookupError) return send(res, 500, { error: "Could not check your account. Please try again." });
   if (existing) {
-    return send(res, 409, {
-      error: "An account already uses this email address. Please sign in instead.",
-    });
+    const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+    const { data, error } = token ? await supabase.auth.getUser(token) : { data: null, error: true };
+    if (error || data?.user?.id !== existing.id) {
+      return send(res, 401, { requiresSignIn: true, error: "Enter your existing account password to register as a donor." });
+    }
+    const { data: source, error: sourceLookupError } = await supabase.from("literature_sources").select("id").eq("profile_id", existing.id).maybeSingle();
+    if (sourceLookupError) return send(res, 500, { error: "Could not check your donor registration. Please try again." });
+    if (source) return send(res, 200, { ok: true, existingAccount: true });
   }
 
+  let profileId = existing?.id;
+  if (!existing) {
   const { data: invitation, error: invitationError } =
     await supabase.auth.admin.inviteUserByEmail(email, {
       data: { full_name: displayName, role: "donor" },
@@ -151,7 +159,7 @@ async function registerLiteratureDonor(req, res, supabase, payload) {
     });
   }
 
-  const profileId = invitation.user.id;
+  profileId = invitation.user.id;
   const { error: profileError } = await supabase.from("profiles").upsert({
     id: profileId,
     email,
@@ -163,6 +171,7 @@ async function registerLiteratureDonor(req, res, supabase, payload) {
   if (profileError) {
     await supabase.auth.admin.deleteUser(profileId);
     return send(res, 500, { error: profileError.message });
+  }
   }
 
   const { error: sourceError } = await supabase.from("literature_sources").insert({
@@ -179,11 +188,11 @@ async function registerLiteratureDonor(req, res, supabase, payload) {
     is_public_location: sourceType === "church",
   });
   if (sourceError) {
-    await supabase.auth.admin.deleteUser(profileId);
+    if (!existing) await supabase.auth.admin.deleteUser(profileId);
     return send(res, 500, { error: sourceError.message });
   }
 
-  return send(res, 201, { ok: true });
+  return send(res, 201, { ok: true, existingAccount: Boolean(existing) });
 }
 
 function escapeHtml(value) {
