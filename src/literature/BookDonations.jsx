@@ -64,13 +64,24 @@ export function DonationOffers() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true); setError("");
-    supabase.from("literature_donation_offers").select("*", { count: "exact" })
-      .order("created_at", { ascending: false }).order("id")
-      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
-      .then(({ data, count, error }) => {
+    Promise.all([
+      supabase.from("literature_donation_offers").select("*").order("created_at", { ascending: false }).limit(500),
+      supabase.from("onevoice_settings").select("setting_key,setting_value").like("setting_key", "guest_book_donation:%").limit(500),
+    ]).then(([stored, recovered]) => {
         if (cancelled) return;
-        if (error) setError("Donation offers could not be loaded. Please refresh and try again.");
-        else { setOffers(data || []); setCount(count || 0); }
+        const primaryOffers = stored.error ? [] : (stored.data || []);
+        const recoveredOffers = recovered.error ? [] : (recovered.data || []).map(item => ({
+          ...item.setting_value,
+          fallbackKey: item.setting_key,
+        }));
+        if (stored.error && recovered.error) {
+          setError("Donation offers could not be loaded. Please refresh and try again.");
+          return;
+        }
+        const combined = [...primaryOffers, ...recoveredOffers]
+          .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+        setCount(combined.length);
+        setOffers(combined.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE));
       }).catch(() => { if (!cancelled) setError("Donation offers could not be loaded. Please refresh and try again."); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -78,8 +89,11 @@ export function DonationOffers() {
   async function updateStatus(id, status) {
     setSaving(id); setError("");
     try {
-      const { data, error } = await supabase.from("literature_donation_offers").update({ status }).eq("id", id).select("id").single();
-      if (error || !data) throw new Error("Could not save the donation status. Please try again.");
+      const current = offers.find(offer => offer.id === id);
+      const result = current?.fallbackKey
+        ? await supabase.from("onevoice_settings").update({ setting_value: { ...current, fallbackKey: undefined, status } }).eq("setting_key", current.fallbackKey).select("setting_key").single()
+        : await supabase.from("literature_donation_offers").update({ status }).eq("id", id).select("id").single();
+      if (result.error || !result.data) throw new Error("Could not save the donation status. Please try again.");
       setOffers(current => current.map(offer => offer.id === id ? { ...offer, status } : offer));
     } catch (error) { setError(error.message); }
     finally { setSaving(null); }
