@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Package } from "@phosphor-icons/react";
-import { supabase } from "../lib/supabase.js";
+import { literatureSupabase as supabase } from "./literatureSupabase.js";
 
 export function BookDonationForm() {
   const [busy, setBusy] = useState(false);
