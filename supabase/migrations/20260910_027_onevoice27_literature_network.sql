@@ -253,11 +253,11 @@ create or replace function public.onevoice_search_literature(input_literature_id
 returns table(inventory_id uuid, literature_id uuid, title text, author text, language text, available_quantity integer, source_type text, state text, lga_city text, general_location text, distance_km numeric)
 language sql security definer set search_path = '' as $$
   select inventory.id, catalogue.id, catalogue.title, catalogue.author, inventory.language,
-    inventory.on_hand_quantity - inventory.reserved_quantity, source.source_type, source.state, source.lga_city,
+    inventory.on_hand_quantity - inventory.reserved_quantity as available_quantity, source.source_type, source.state, source.lga_city,
     source.general_location,
     case when input_latitude is not null and input_longitude is not null and source.latitude is not null and source.longitude is not null
       then round((6371 * acos(least(1, greatest(-1, cos(radians(input_latitude)) * cos(radians(source.latitude)) * cos(radians(source.longitude) - radians(input_longitude)) + sin(radians(input_latitude)) * sin(radians(source.latitude))))))::numeric, 1)
-      else null end
+      else null end as distance_km
   from public.literature_inventory inventory
   join public.literature_sources source on source.id = inventory.source_id
   join public.literature_catalogue catalogue on catalogue.id = inventory.literature_id
