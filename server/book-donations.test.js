@@ -49,3 +49,20 @@ test("storage failures cannot be reported as success or expose database details"
   assert.equal(result.body.ok, undefined);
   assert.doesNotMatch(result.body.error, /private database/);
 });
+test("storage failures deliver the validated offer through a private fallback", async () => {
+  let delivered;
+  const result = await submitBookDonation(database({ code: "42P01", message: "table missing" }), offer, {
+    onStorageFailure: async donation => { delivered = donation; },
+  });
+  assert.equal(result.status, 202);
+  assert.equal(result.body.ok, true);
+  assert.equal(delivered.email, "existing@example.org");
+  assert.equal(delivered.quantity, 10);
+});
+test("failed storage and failed fallback return a retryable error", async () => {
+  const result = await submitBookDonation(database({ code: "42P01", message: "table missing" }), offer, {
+    onStorageFailure: async () => { throw new Error("email unavailable"); },
+  });
+  assert.equal(result.status, 503);
+  assert.equal(result.body.ok, undefined);
+});

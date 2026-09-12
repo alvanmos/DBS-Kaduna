@@ -1,4 +1,4 @@
-export async function submitBookDonation(supabase, payload) {
+export async function submitBookDonation(supabase, payload, { onStorageFailure } = {}) {
   const fail = (error) => ({ status: 400, body: { error } });
   if (payload.website) return { status: 200, body: { ok: true } };
   const fields = {
@@ -26,10 +26,27 @@ export async function submitBookDonation(supabase, payload) {
   const quantity = Number(payload.quantity);
   if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 1000000) return fail("Enter a whole number of books between 1 and 1,000,000.");
   if (payload.privacyConsent !== true) return fail("Please consent to being contacted about your donation.");
-  const { error } = await supabase.from("literature_donation_offers").insert({
+  const donation = {
     ...record, email: record.email || null, phone: record.phone || null,
     quantity, status: "new", consent_at: new Date().toISOString(),
+  };
+  const { error } = await supabase.from("literature_donation_offers").insert(donation);
+  if (!error) return { status: 201, body: { ok: true } };
+
+  console.error("[book-donation] database save failed", {
+    code: error.code || "unknown",
+    message: error.message || "unknown database error",
   });
-  if (error) return { status: 503, body: { error: "Your donation could not be saved. Please try again later." } };
-  return { status: 201, body: { ok: true } };
+  if (onStorageFailure) {
+    try {
+      await onStorageFailure(donation);
+      console.info("[book-donation] delivered through private fallback");
+      return { status: 202, body: { ok: true } };
+    } catch (fallbackError) {
+      console.error("[book-donation] email fallback failed", {
+        message: fallbackError?.message || "unknown email error",
+      });
+    }
+  }
+  return { status: 503, body: { error: "Your donation could not be saved. Please try again later." } };
 }
