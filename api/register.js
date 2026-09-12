@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { submitBookDonation } from "../server/book-donations.js";
 
 const WELCOME_LETTER_FILE = "dbs-kaduna-welcome-letter.pdf";
 const WELCOME_LETTER_ATTACHMENT_NAME = "DBS_Kaduna_Welcome_Letter.pdf";
@@ -251,6 +252,10 @@ export default async function handler(req, res) {
   if (req.method === "GET") return reactivateStudent(req, res, supabase);
 
   const payload = req.body ?? {};
+  if (payload.registrationType === "book_donation") {
+    const result = await submitBookDonation(supabase, payload);
+    return send(res, result.status, result.body);
+  }
   if (payload.registrationType === "literature_donor") {
     return registerLiteratureDonor(req, res, supabase, payload);
   }
