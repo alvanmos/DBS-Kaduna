@@ -1,7 +1,7 @@
 -- OneVoice27 complete follow-up migration: isolated coordinator workflow and dedicated admin permissions.
 -- Run this after ONEVOICE27_CORRECTED_SETUP.sql.
-
-begin;
+-- Statements intentionally use Supabase SQL Editor autocommit so auth.users locks are held briefly.
+-- The migration is idempotent and can be rerun after an interrupted attempt.
 
 -- Separate OneVoice27 account onboarding and give approved coordinators request access.
 
@@ -429,5 +429,3 @@ begin
   return coordinator_record;
 end;
 $$;
-commit;
-
