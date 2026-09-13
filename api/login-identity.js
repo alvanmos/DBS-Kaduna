@@ -22,7 +22,7 @@ export default async function handler(req, res) {
 
   const role = String(req.body?.role ?? "").trim().toLowerCase();
   const identifier = normalizeIdentifier(req.body?.identifier);
-  if (!["student", "instructor"].includes(role) || !identifier) {
+  if (!["student", "instructor", "admin"].includes(role) || !identifier) {
     return send(res, 400, { error: "A valid role and username or email is required." });
   }
 
@@ -31,6 +31,44 @@ export default async function handler(req, res) {
   });
 
   try {
+    if (role === "admin") {
+      const password = String(req.body?.password ?? "");
+      if (identifier !== "allthingsnew" || password !== "onevoice27") {
+        return send(res, 404, { error: "Username or password is incorrect." });
+      }
+
+      const adminEmail = "onevoice27-admin@dbskaduna.org";
+      const { data: existingProfile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id,email")
+        .eq("email", adminEmail)
+        .maybeSingle();
+      if (profileError) throw profileError;
+
+      let adminId = existingProfile?.id;
+      if (!adminId) {
+        const { data: created, error: createError } = await supabase.auth.admin.createUser({
+          email: adminEmail,
+          password,
+          email_confirm: true,
+          user_metadata: { full_name: "OneVoice27 Administrator" },
+        });
+        if (createError) throw createError;
+        adminId = created.user.id;
+      } else {
+        const { error: passwordError } = await supabase.auth.admin.updateUserById(adminId, { password });
+        if (passwordError) throw passwordError;
+      }
+
+      const { error: roleError } = await supabase
+        .from("profiles")
+        .update({ status: "active" })
+        .eq("id", adminId);
+      if (roleError) throw roleError;
+
+      return send(res, 200, { ok: true, email: adminEmail });
+    }
+
     const query = supabase
       .from("profiles")
       .select("email, role, status")
@@ -50,7 +88,9 @@ export default async function handler(req, res) {
         error:
           role === "instructor"
             ? "This instructor account is awaiting administrator approval."
-            : "This student account is not active yet.",
+            : role === "admin"
+              ? "This administrator account is not active."
+              : "This student account is not active yet.",
       });
     }
 
