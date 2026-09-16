@@ -75,17 +75,34 @@ function CoordinatorRegistration() {
   async function submit(event) {
     event.preventDefault();
     setBusy(true); setError(""); setSuccess("");
-    const { error: signUpError } = await supabase.auth.signUp({
-      email: form.email.trim().toLowerCase(),
-      password: form.password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/literature/login`,
-        data: { onevoice_role: "coordinator", full_name: form.name.trim(), whatsapp: form.whatsapp.trim(), church_address: form.churchAddress.trim() },
-      },
-    });
-    setBusy(false);
-    if (signUpError) setError(message(signUpError));
-    else setSuccess("Registration received. Confirm your email if requested, then wait for an Adventist Literature Network administrator to approve your account.");
+    try {
+      const email = form.email.trim().toLowerCase();
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password: form.password });
+      const isUnknownAccount = signInError?.code === "invalid_credentials" || /invalid login credentials/i.test(signInError?.message || "");
+      if (signInError && !isUnknownAccount) throw signInError;
+      const response = await fetch("/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(signInData?.session?.access_token ? { Authorization: `Bearer ${signInData.session.access_token}` } : {}),
+        },
+        body: JSON.stringify({
+          registrationType: "literature_coordinator",
+          name: form.name.trim(),
+          whatsapp: form.whatsapp.trim(),
+          email,
+          password: form.password,
+          churchAddress: form.churchAddress.trim(),
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Coordinator registration could not be completed.");
+      setSuccess(payload.message || "Registration received. Wait for an Adventist Literature Network administrator to approve your account.");
+    } catch (registrationError) {
+      setError(message(registrationError));
+    } finally {
+      setBusy(false);
+    }
   }
   return <main className="literature-auth"><a href="/literature">← Back to Adventist Literature Network</a><form onSubmit={submit}><UsersThree size={36} weight="duotone" /><p>COORDINATOR REGISTRATION</p><h1>Join the Adventist Literature Network</h1><span>Register to locate literature for prospects. Access becomes active after administrator approval.</span><label>Name<input value={form.name} onChange={event=>setForm({...form,name:event.target.value})} autoComplete="name" required /></label><label>WhatsApp contact<input value={form.whatsapp} onChange={event=>setForm({...form,whatsapp:event.target.value})} autoComplete="tel" required /></label><label>Email<input type="email" value={form.email} onChange={event=>setForm({...form,email:event.target.value})} autoComplete="email" required /></label><label>Password<input type="password" minLength="10" value={form.password} onChange={event=>setForm({...form,password:event.target.value})} autoComplete="new-password" required /></label><label>Church address<textarea rows="3" value={form.churchAddress} onChange={event=>setForm({...form,churchAddress:event.target.value})} required /></label>{error && <div className="literature-error">{error}</div>}{success && <div className="literature-success">{success}</div>}<button disabled={busy || Boolean(success)}>{busy ? "Registering…" : success ? "Registration submitted" : "Register as coordinator"}</button><a href="/literature/login">Already registered? Sign in</a></form></main>;
 }
@@ -113,6 +130,6 @@ function RequestList({ requests, onTransition, role }) { const requester = ["eva
 
  function CoordinatorWorkspace({ data, refresh, notify }) { return <><EvangelistWorkspace data={data} refresh={refresh} notify={notify} coordinator />{data.coordinator?.account_status === "active" && <section className="literature-panel"><div className="literature-panel-heading"><div><p>BOOK CATALOGUE</p><h2>Literature available through the Adventist Literature Network</h2></div></div><Catalogue catalogue={data.catalogue} /></section>}</>; }
 
- function LiteratureDashboard({ profile, onSignOut }) { const [data,setData]=useState({catalogue:[],requests:[],inventory:[],source:null,evangelist:null,coordinator:null,coordinators:[]}); const [notice,setNotice]=useState(""); const [error,setError]=useState(""); const refresh=async()=>setData(await loadLiteratureWorkspace(profile)); useEffect(()=>{refresh().catch(err=>setError(message(err)));},[profile.id]); const [workspace, setWorkspace]=useState("default"); const isOneVoiceAdmin=profile.email === "onevoice27-admin@dbskaduna.org"; const profileRole=isOneVoiceAdmin ? "admin" : profile.role; const role=data.source && (workspace === "donor" || !["admin","evangelist","coordinator"].includes(profileRole)) ? "donor" : profileRole; if (!['admin','donor','evangelist','coordinator'].includes(role)) return <PublicLanding catalogue={data.catalogue} signedIn />; const notify=(text,bad=false)=>bad?setError(text):setNotice(text); return <main className="literature-shell"><aside><a href="/literature" className="literature-brand"><span>OV27</span><strong>Adventist<br/>Literature Network</strong></a><nav>{data.source && ["admin","evangelist","coordinator"].includes(profileRole) && <button type="button" onClick={()=>setWorkspace(workspace === "donor" ? "default" : "donor")}>{workspace === "donor" ? "Main workspace" : "My donations"}</button>}<a href="#workspace">Dashboard</a><a href="#requests">Requests</a><a href="#catalogue">Catalogue</a></nav><button type="button" onClick={onSignOut}><SignOut size={18}/> Sign out</button></aside><div className="literature-content"><header><div><p>DISCOVER BIBLE SCHOOL, KADUNA</p><h2>Adventist Literature Network</h2></div><span>{profile.full_name}</span></header>{error && <div className="literature-error">{error}</div>}{notice && <div className="literature-toast">{notice}</div>}{role === "donor" ? <DonorWorkspace data={data} refresh={refresh} notify={notify} /> : role === "evangelist" ? <EvangelistWorkspace data={data} refresh={refresh} notify={notify} /> : role === "coordinator" ? <CoordinatorWorkspace data={data} refresh={refresh} notify={notify} /> : <AdminWorkspace data={data} refresh={refresh} notify={notify} />}</div></main>; }
+ function LiteratureDashboard({ profile, onSignOut }) { const [data,setData]=useState({catalogue:[],requests:[],inventory:[],source:null,evangelist:null,coordinator:null,coordinators:[]}); const [notice,setNotice]=useState(""); const [error,setError]=useState(""); const refresh=async()=>setData(await loadLiteratureWorkspace(profile)); useEffect(()=>{refresh().catch(err=>setError(message(err)));},[profile.id]); const [workspace, setWorkspace]=useState("default"); const isOneVoiceAdmin=profile.email === "onevoice27-admin@dbskaduna.org"; const profileRole=isOneVoiceAdmin ? "admin" : data.coordinator ? "coordinator" : profile.role; const role=data.source && (workspace === "donor" || !["admin","evangelist","coordinator"].includes(profileRole)) ? "donor" : profileRole; if (!['admin','donor','evangelist','coordinator'].includes(role)) return <PublicLanding catalogue={data.catalogue} signedIn />; const notify=(text,bad=false)=>bad?setError(text):setNotice(text); return <main className="literature-shell"><aside><a href="/literature" className="literature-brand"><span>OV27</span><strong>Adventist<br/>Literature Network</strong></a><nav>{data.source && ["admin","evangelist","coordinator"].includes(profileRole) && <button type="button" onClick={()=>setWorkspace(workspace === "donor" ? "default" : "donor")}>{workspace === "donor" ? "Main workspace" : "My donations"}</button>}<a href="#workspace">Dashboard</a><a href="#requests">Requests</a><a href="#catalogue">Catalogue</a></nav><button type="button" onClick={onSignOut}><SignOut size={18}/> Sign out</button></aside><div className="literature-content"><header><div><p>DISCOVER BIBLE SCHOOL, KADUNA</p><h2>Adventist Literature Network</h2></div><span>{profile.full_name}</span></header>{error && <div className="literature-error">{error}</div>}{notice && <div className="literature-toast">{notice}</div>}{role === "donor" ? <DonorWorkspace data={data} refresh={refresh} notify={notify} /> : role === "evangelist" ? <EvangelistWorkspace data={data} refresh={refresh} notify={notify} /> : role === "coordinator" ? <CoordinatorWorkspace data={data} refresh={refresh} notify={notify} /> : <AdminWorkspace data={data} refresh={refresh} notify={notify} />}</div></main>; }
 
 export function LiteratureNetwork() { const [catalogue,setCatalogue]=useState([]); const [session,setSession]=useState(null); const [profile,setProfile]=useState(null); const [mode,setMode]=useState(window.location.pathname.includes("register-coordinator")?"register-coordinator":(window.location.pathname.includes("register-donor") || window.location.pathname === "/literature/donate")?"register":window.location.pathname.includes("login")?"login":"public"); const [needsPassword,setNeedsPassword]=useState(()=>['invite','recovery'].includes(getAuthFlowType())); useEffect(()=>{loadPublicLiterature().then(setCatalogue).catch(()=>{}); if(!supabase)return undefined; const verify=async(current)=>{setSession(current);if(!current){setProfile(null);return;}const {data}=await supabase.from("profiles").select("*").eq("id",current.user.id).maybeSingle();setProfile(data||null);};supabase.auth.getSession().then(({data})=>verify(data.session));const {data:listener}=supabase.auth.onAuthStateChange((event,current)=>{if(event === 'PASSWORD_RECOVERY') setNeedsPassword(true);verify(current);});return()=>listener.subscription.unsubscribe();},[]); if(!isSupabaseConfigured)return <main className="literature-auth"><div className="literature-error">The Literature Network is not configured yet.</div></main>; if(mode==="register")return <BookDonationForm/>; if(mode==="register-coordinator")return <CoordinatorRegistration/>; if(session && needsPassword)return <PasswordSetup onReady={()=>setNeedsPassword(false)} />; if(mode==="login")return <SignIn onClose={()=>setMode("public")} onSignedIn={()=>{window.history.replaceState({},"","/literature");setMode("public");}}/>; if(profile)return <LiteratureDashboard profile={profile} onSignOut={async()=>{await supabase.auth.signOut();setMode("public");}}/>; return <PublicLanding catalogue={catalogue}/>; }

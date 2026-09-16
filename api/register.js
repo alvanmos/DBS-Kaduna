@@ -111,6 +111,131 @@ function validEmail(value) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(value ?? "").trim());
 }
 
+async function registerLiteratureCoordinator(req, res, supabase, payload) {
+  const name = String(payload.name ?? "").trim();
+  const whatsapp = String(payload.whatsapp ?? "").trim();
+  const email = String(payload.email ?? "").trim().toLowerCase();
+  const password = String(payload.password ?? "");
+  const churchAddress = String(payload.churchAddress ?? "").trim();
+
+  if (name.length < 2 || !whatsapp || !validEmail(email) || !churchAddress) {
+    return send(res, 400, {
+      error: "Provide your name, WhatsApp contact, email, and church address.",
+    });
+  }
+  try {
+    validatePassword(password);
+  } catch (error) {
+    return send(res, 400, { error: error.message });
+  }
+
+  const { data: existingProfile, error: lookupError } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("email", email)
+    .maybeSingle();
+  if (lookupError) {
+    return send(res, 500, {
+      error: "Could not check your account. Please try again.",
+    });
+  }
+
+  let profileId = existingProfile?.id ?? null;
+  let createdUserId = null;
+
+  if (existingProfile) {
+    const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+    const { data, error } = token
+      ? await supabase.auth.getUser(token)
+      : { data: null, error: true };
+    if (error || data?.user?.id !== existingProfile.id) {
+      return send(res, 401, {
+        requiresSignIn: true,
+        error: "This email already has a DBS account. Enter its current password to register as a coordinator.",
+      });
+    }
+  } else {
+    const { data: createdUser, error: createUserError } =
+      await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: name,
+          onevoice_role: "coordinator",
+          whatsapp,
+          church_address: churchAddress,
+        },
+      });
+    if (createUserError || !createdUser.user) {
+      return send(res, 400, {
+        error: createUserError?.message || "Coordinator account could not be created.",
+      });
+    }
+
+    profileId = createdUser.user.id;
+    createdUserId = profileId;
+    const { error: profileError } = await supabase.from("profiles").upsert({
+      id: profileId,
+      email,
+      full_name: name,
+      phone: whatsapp,
+      role: "coordinator",
+      status: "active",
+    });
+    if (profileError) {
+      await supabase.auth.admin.deleteUser(profileId);
+      return send(res, 500, { error: profileError.message });
+    }
+  }
+
+  const { data: existingCoordinator, error: coordinatorLookupError } = await supabase
+    .from("literature_coordinators")
+    .select("id,account_status,registration_source")
+    .eq("profile_id", profileId)
+    .maybeSingle();
+  if (coordinatorLookupError) {
+    if (createdUserId) await supabase.auth.admin.deleteUser(createdUserId);
+    return send(res, 500, {
+      error: "Could not check your coordinator application. Please try again.",
+    });
+  }
+
+  const coordinatorDetails = {
+    name,
+    whatsapp,
+    email,
+    church_address: churchAddress,
+    registration_source: "onevoice27",
+  };
+  const coordinatorResult = existingCoordinator
+    ? await supabase
+      .from("literature_coordinators")
+      .update({
+        ...coordinatorDetails,
+        account_status: existingCoordinator.registration_source === "onevoice27"
+          ? existingCoordinator.account_status
+          : "pending",
+      })
+      .eq("id", existingCoordinator.id)
+    : await supabase.from("literature_coordinators").insert({
+      profile_id: profileId,
+      ...coordinatorDetails,
+      account_status: "pending",
+    });
+
+  if (coordinatorResult.error) {
+    if (createdUserId) await supabase.auth.admin.deleteUser(createdUserId);
+    return send(res, 500, { error: coordinatorResult.error.message });
+  }
+
+  return send(res, existingCoordinator ? 200 : 201, {
+    ok: true,
+    existingAccount: Boolean(existingProfile),
+    message: "Coordinator registration received and sent for administrator approval.",
+  });
+}
+
 async function registerLiteratureDonor(req, res, supabase, payload) {
   const sourceType = String(payload.sourceType ?? "").trim();
   const displayName = String(payload.displayName ?? "").trim();
@@ -318,6 +443,9 @@ export default async function handler(req, res) {
   }
   if (payload.registrationType === "literature_donor") {
     return registerLiteratureDonor(req, res, supabase, payload);
+  }
+  if (payload.registrationType === "literature_coordinator") {
+    return registerLiteratureCoordinator(req, res, supabase, payload);
   }
 
   const { recruitmentKind, campaignSlug = "", formData = {}, website = "" } =
