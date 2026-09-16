@@ -31,7 +31,7 @@ export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabasePublishableKey, {
       auth: {
         autoRefreshToken: true,
-        detectSessionInUrl: true,
+        detectSessionInUrl: !window.location.pathname.startsWith("/literature"),
         persistSession: true,
       },
     })

@@ -1,6 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
+import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { submitBookDonation } from "../server/book-donations.js";
 
 const WELCOME_LETTER_FILE = "dbs-kaduna-welcome-letter.pdf";
 const WELCOME_LETTER_ATTACHMENT_NAME = "DBS_Kaduna_Welcome_Letter.pdf";
@@ -127,17 +129,25 @@ async function registerLiteratureDonor(req, res, supabase, payload) {
     });
   }
 
-  const { data: existing } = await supabase
+  const { data: existing, error: lookupError } = await supabase
     .from("profiles")
     .select("id")
     .eq("email", email)
     .maybeSingle();
+  if (lookupError) return send(res, 500, { error: "Could not check your account. Please try again." });
   if (existing) {
-    return send(res, 409, {
-      error: "An account already uses this email address. Please sign in instead.",
-    });
+    const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+    const { data, error } = token ? await supabase.auth.getUser(token) : { data: null, error: true };
+    if (error || data?.user?.id !== existing.id) {
+      return send(res, 401, { requiresSignIn: true, error: "Enter your existing account password to register as a donor." });
+    }
+    const { data: source, error: sourceLookupError } = await supabase.from("literature_sources").select("id").eq("profile_id", existing.id).maybeSingle();
+    if (sourceLookupError) return send(res, 500, { error: "Could not check your donor registration. Please try again." });
+    if (source) return send(res, 200, { ok: true, existingAccount: true });
   }
 
+  let profileId = existing?.id;
+  if (!existing) {
   const { data: invitation, error: invitationError } =
     await supabase.auth.admin.inviteUserByEmail(email, {
       data: { full_name: displayName, role: "donor" },
@@ -151,7 +161,7 @@ async function registerLiteratureDonor(req, res, supabase, payload) {
     });
   }
 
-  const profileId = invitation.user.id;
+  profileId = invitation.user.id;
   const { error: profileError } = await supabase.from("profiles").upsert({
     id: profileId,
     email,
@@ -163,6 +173,7 @@ async function registerLiteratureDonor(req, res, supabase, payload) {
   if (profileError) {
     await supabase.auth.admin.deleteUser(profileId);
     return send(res, 500, { error: profileError.message });
+  }
   }
 
   const { error: sourceError } = await supabase.from("literature_sources").insert({
@@ -179,11 +190,11 @@ async function registerLiteratureDonor(req, res, supabase, payload) {
     is_public_location: sourceType === "church",
   });
   if (sourceError) {
-    await supabase.auth.admin.deleteUser(profileId);
+    if (!existing) await supabase.auth.admin.deleteUser(profileId);
     return send(res, 500, { error: sourceError.message });
   }
 
-  return send(res, 201, { ok: true });
+  return send(res, 201, { ok: true, existingAccount: Boolean(existing) });
 }
 
 function escapeHtml(value) {
@@ -224,6 +235,63 @@ async function sendWelcomeLetter({ email, fullName, studentId }) {
   }
 }
 
+async function sendBookDonationOffer(donation) {
+  const from = process.env.DISCOVER_BIBLE_SCHOOL_EMAIL_FROM;
+  const to = process.env.DISCOVER_BIBLE_SCHOOL_EMAIL_REPLY_TO || from;
+  if (!process.env.RESEND_API_KEY || !from || !to) {
+    throw new Error("Donation notification email is not configured.");
+  }
+  const lines = [
+    `Donor: ${donation.donor_name}`,
+    `Email: ${donation.email || "Not provided"}`,
+    `Phone / WhatsApp: ${donation.phone || "Not provided"}`,
+    `Location: ${donation.lga_city}, ${donation.state}`,
+    `Quantity: ${donation.quantity}`,
+    "",
+    "Books:",
+    donation.book_details,
+    "",
+    "Collection or delivery notes:",
+    donation.notes || "None provided",
+  ];
+  const notificationId = createHash("sha256")
+    .update(`${donation.email || donation.phone}:${donation.consent_at}`)
+    .digest("hex");
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+      "Idempotency-Key": `dbs-book-donation-${notificationId}`,
+    },
+    body: JSON.stringify({
+      from,
+      to: [to],
+      reply_to: donation.email || undefined,
+      subject: "New book donation offer",
+      text: lines.join("\n"),
+    }),
+  });
+  if (!response.ok) throw new Error(`Donation notification email failed (${response.status}).`);
+}
+
+async function preserveBookDonationOffer(supabase, donation) {
+  const id = randomUUID();
+  const { error } = await supabase.from("onevoice_settings").insert({
+    setting_key: `guest_book_donation:${id}`,
+    setting_value: { ...donation, id, created_at: donation.consent_at },
+  });
+  if (!error) {
+    console.info("[book-donation] saved in private compatibility store");
+    return;
+  }
+  console.error("[book-donation] compatibility save failed", {
+    code: error.code || "unknown",
+    message: error.message || "unknown database error",
+  });
+  await sendBookDonationOffer(donation);
+}
+
 export default async function handler(req, res) {
   if (!["GET", "POST"].includes(req.method)) {
     res.setHeader("Allow", "GET, POST");
@@ -242,6 +310,12 @@ export default async function handler(req, res) {
   if (req.method === "GET") return reactivateStudent(req, res, supabase);
 
   const payload = req.body ?? {};
+  if (payload.registrationType === "book_donation") {
+    const result = await submitBookDonation(supabase, payload, {
+      onStorageFailure: donation => preserveBookDonationOffer(supabase, donation),
+    });
+    return send(res, result.status, result.body);
+  }
   if (payload.registrationType === "literature_donor") {
     return registerLiteratureDonor(req, res, supabase, payload);
   }

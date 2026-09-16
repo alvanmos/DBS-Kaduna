@@ -1,4 +1,4 @@
-import { supabase } from "../lib/supabase.js";
+import { literatureSupabase as supabase } from "./literatureSupabase.js";
 
 function throwIfError(result) {
   if (result.error) throw result.error;
@@ -18,18 +18,22 @@ export async function loadPublicLiterature() {
 
 export async function loadLiteratureWorkspace(profile) {
   const catalogue = await loadPublicLiterature();
-  if (!profile || !supabase) return { catalogue, requests: [], inventory: [], source: null, evangelist: null, coordinator: null };
+  if (!profile || !supabase) return { catalogue, requests: [], inventory: [], source: null, evangelist: null, coordinator: null, coordinators: [] };
 
-  const [sourceResult, evangelistResult, coordinatorResult, requestResult] = await Promise.all([
+  const [sourceResult, evangelistResult, coordinatorResult, requestResult, coordinatorsResult] = await Promise.all([
     supabase.from("literature_sources").select("*").eq("profile_id", profile.id).maybeSingle(),
     supabase.from("literature_evangelists").select("*").eq("profile_id", profile.id).maybeSingle(),
     supabase.from("literature_coordinators").select("*").eq("profile_id", profile.id).maybeSingle(),
     supabase.from("literature_requests").select("*").order("created_at", { ascending: false }).limit(60),
+    profile.role === "admin" || profile.email === "onevoice27-admin@dbskaduna.org"
+      ? supabase.from("literature_coordinators").select("*").order("created_at", { ascending: false })
+      : Promise.resolve({ data: [], error: null }),
   ]);
   const source = throwIfError(sourceResult);
   const evangelist = throwIfError(evangelistResult);
   const coordinator = throwIfError(coordinatorResult);
   const requests = throwIfError(requestResult);
+  const coordinators = throwIfError(coordinatorsResult);
   const inventory = source
     ? throwIfError(
       await supabase
@@ -39,7 +43,16 @@ export async function loadLiteratureWorkspace(profile) {
         .order("created_at", { ascending: false }),
     )
     : [];
-  return { catalogue, requests, inventory, source, evangelist, coordinator };
+  return { catalogue, requests, inventory, source, evangelist, coordinator, coordinators };
+}
+
+export async function setCoordinatorStatus(coordinatorId, status) {
+  return throwIfError(
+    await supabase.rpc("onevoice_set_coordinator_status", {
+      input_coordinator_id: coordinatorId,
+      input_status: status,
+    }),
+  );
 }
 
 export async function searchLiterature(filters) {

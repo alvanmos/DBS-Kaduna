@@ -39,3 +39,11 @@ The first implementation modifies the application router (`src/main.jsx`), adds 
 ## First-release constraints
 
 The module supports list-based location search immediately. Map rendering, third-party geocoding, cover-image upload, report exports, and a DBS-student “Send Literature” action are deliberately extension points: they require provider configuration or a separately designed administrative workflow and are not exposed as unsecured placeholders.
+
+## Guest book donations
+
+The public /literature/donate form (also available through the older /literature/register-donor URL) accepts book offers without sign-in or account creation. Existing account emails are accepted as contact details only. It uses the existing /api/register endpoint with registrationType book_donation, so no additional serverless endpoint is needed.
+
+Apply supabase/migrations/20260911000000_guest_book_donations.sql before deploying this change. The new literature_donation_offers table permits server-side submission and administrator-only reading and status updates. Public and ordinary authenticated clients cannot read offers or insert them directly. The Literature Network administration workspace provides a paginated offer list with contact information and New, Contacted, Received and Closed statuses. Offers do not create source profiles, accounts, invitations, or inventory. Staff arrange physical collection or delivery through the supplied contact method.
+
+If the offers table is temporarily unavailable, the registration endpoint stores the validated offer in the existing administrator-only `onevoice_settings` table. These recovered offers remain visible and manageable in the administration workspace. If both database paths fail, the endpoint sends the offer privately to `DISCOVER_BIBLE_SCHOOL_EMAIL_REPLY_TO` through the configured Resend account. This prevents donors from losing a submission while a migration or database service is unavailable. The server logs only error and fallback status information; donor contact details are never logged.
