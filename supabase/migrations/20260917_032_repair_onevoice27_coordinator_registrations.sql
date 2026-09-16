@@ -127,10 +127,10 @@ begin
 end;
 $$;
 
-drop trigger if exists zz_onevoice_register_coordinator on auth.users;
-create trigger zz_onevoice_register_coordinator
-after insert on auth.users
-for each row execute function public.onevoice_register_coordinator_from_auth_user();
+-- Migration 028 already attached zz_onevoice_register_coordinator to this
+-- function. CREATE OR REPLACE keeps that trigger connected to the repaired
+-- function without taking an AccessExclusiveLock on auth.users. Dropping and
+-- recreating the live auth trigger here can deadlock with an in-flight signup.
 
 create or replace function public.onevoice_is_coordinator()
 returns boolean
