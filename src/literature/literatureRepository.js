@@ -35,6 +35,7 @@ export async function loadLiteratureWorkspace(profile) {
         .from("literature_coordinators")
         .select("*")
         .eq("registration_source", "onevoice27")
+        .neq("account_status", "disabled")
         .order("created_at", { ascending: false })
       : Promise.resolve({ data: [], error: null }),
   ]);
