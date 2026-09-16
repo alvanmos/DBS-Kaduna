@@ -13,6 +13,46 @@ alter table public.literature_coordinators
   add column if not exists approved_by uuid references public.profiles(id) on delete set null,
   add column if not exists approved_at timestamptz;
 
+alter table public.literature_coordinators
+  add column if not exists registration_source text;
+alter table public.literature_coordinators
+  alter column registration_source set default 'legacy_unverified';
+
+update public.literature_coordinators
+set registration_source = 'legacy_unverified'
+where registration_source is null;
+
+update public.literature_coordinators coordinator
+set registration_source = 'onevoice27'
+from auth.users auth_user
+where coordinator.profile_id = auth_user.id
+  and coalesce(auth_user.raw_user_meta_data ->> 'onevoice_role', '') = 'coordinator';
+
+update public.literature_coordinators
+set registration_source = 'legacy_unverified',
+    account_status = 'disabled'
+where registration_source <> 'onevoice27';
+
+alter table public.literature_coordinators
+  alter column registration_source set not null;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'literature_coordinators_registration_source_check'
+      and conrelid = 'public.literature_coordinators'::regclass
+  ) then
+    alter table public.literature_coordinators
+      add constraint literature_coordinators_registration_source_check
+      check (registration_source in ('onevoice27', 'legacy_unverified'));
+  end if;
+end;
+$$;
+
+create index if not exists literature_coordinators_registration_source_idx
+  on public.literature_coordinators(registration_source, created_at desc);
+
 alter table public.literature_coordinators alter column state drop not null;
 alter table public.literature_coordinators alter column account_status set default 'pending';
 alter table public.literature_coordinators drop constraint if exists literature_coordinators_account_status_check;
@@ -34,7 +74,7 @@ security definer
 set search_path = ''
 as $$
 begin
-  if new.raw_user_meta_data ->> 'onevoice_role' <> 'coordinator' then
+  if coalesce(new.raw_user_meta_data ->> 'onevoice_role', '') <> 'coordinator' then
     return new;
   end if;
 
@@ -49,16 +89,19 @@ begin
     whatsapp,
     email,
     church_address,
-    account_status
+    account_status,
+    registration_source
   ) values (
     new.id,
     trim(coalesce(new.raw_user_meta_data ->> 'full_name', '')),
     nullif(trim(new.raw_user_meta_data ->> 'whatsapp'), ''),
     lower(new.email),
     nullif(trim(new.raw_user_meta_data ->> 'church_address'), ''),
-    'pending'
+    'pending',
+    'onevoice27'
   )
-  on conflict (profile_id) do nothing;
+  on conflict (profile_id) do update
+    set registration_source = 'onevoice27';
 
   return new;
 end;
@@ -78,8 +121,25 @@ set search_path = ''
 as $$
   select id
   from public.literature_coordinators
-  where profile_id = auth.uid() and account_status = 'active'
+  where profile_id = auth.uid()
+    and registration_source = 'onevoice27'
+    and account_status = 'active'
   limit 1;
+$$;
+
+create or replace function public.onevoice_is_coordinator()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.literature_coordinators
+    where profile_id = auth.uid()
+      and registration_source = 'onevoice27'
+      and account_status = 'active'
+  );
 $$;
 
 alter table public.literature_requests
@@ -345,10 +405,10 @@ create policy literature_evangelists_admin_write on public.literature_evangelist
 
 drop policy if exists literature_coordinators_self_or_admin on public.literature_coordinators;
 create policy literature_coordinators_self_or_admin on public.literature_coordinators
-  for select to authenticated using (profile_id = auth.uid() or public.onevoice_is_admin());
+  for select to authenticated using ((registration_source = 'onevoice27' and profile_id = auth.uid()) or public.onevoice_is_admin());
 drop policy if exists literature_coordinators_admin_write on public.literature_coordinators;
 create policy literature_coordinators_admin_write on public.literature_coordinators
-  for all to authenticated using (public.onevoice_is_admin()) with check (public.onevoice_is_admin());
+  for all to authenticated using (public.onevoice_is_admin()) with check (public.onevoice_is_admin() and registration_source = 'onevoice27');
 
 drop policy if exists literature_inventory_owner_or_admin on public.literature_inventory;
 create policy literature_inventory_owner_or_admin on public.literature_inventory
@@ -424,6 +484,7 @@ begin
       approved_by = case when input_status = 'active' then auth.uid() else approved_by end,
       approved_at = case when input_status = 'active' then now() else approved_at end
   where id = input_coordinator_id
+    and registration_source = 'onevoice27'
   returning * into coordinator_record;
   if not found then raise exception 'Coordinator application not found'; end if;
   return coordinator_record;
