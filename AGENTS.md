@@ -11,7 +11,7 @@ When implementing from a selected generated mock, treat that image as the source
 - Use the selected "Open Book Welcome" layout.
 - Place paired logos and compact navigation across the top.
 - Use the supplied circular Discover Bible School Kaduna logo in the header.
-- Use a blue News control in the desktop header and a blue Login dropdown with role options in the main actions.
+- Use a blue News control in the desktop header. Keep the original main-action palette: blue for student registration, green for volunteer-instructor registration, and white with blue text and border for the Login dropdown.
 - Center the welcome message and registration actions above a five-cover carousel.
 - Use the supplied study guide covers without altering their artwork.
 - Finish the page with a full-width WhatsApp help band.
