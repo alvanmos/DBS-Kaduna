@@ -135,3 +135,48 @@ final result: blocked
 - No new raster or custom image asset was introduced.
 
 final result: blocked
+
+## Mobile primary navigation design QA — 2026-09-17
+
+## Evidence
+
+- Source visual truth: `C:\Users\BTC\AppData\Local\Temp\codex-clipboard-5bc40572-643f-4b38-b3b4-51648c195717.png`
+- Source dimensions: 1111 × 55 px.
+- Browser-rendered implementation: `C:\Users\BTC\Documents\Website for DBS Kaduna\.worktrees\restore-home-menu-colors\mobile-nav-implementation.png`
+- Scrolled implementation state: `C:\Users\BTC\Documents\Website for DBS Kaduna\.worktrees\restore-home-menu-colors\mobile-nav-scrolled.png`
+- Focused comparison: `C:\Users\BTC\Documents\Website for DBS Kaduna\.worktrees\restore-home-menu-colors\design-qa-mobile-navigation-comparison.png`
+- Implementation dimensions and CSS viewport: 390 × 844 px at device scale factor 1.
+- State: public homepage at `/`, menu at its starting position and horizontally scrolled to its end.
+
+## Findings
+
+- No actionable P0, P1, or P2 differences remain.
+- Fonts and typography: the existing site typeface, navy text, weight, single-line labels, and active blue underline preserve the reference treatment at phone size.
+- Spacing and layout rhythm: links stay on one row with touch-friendly spacing. The menu sits below the phone header and above the welcome content without compressing either section.
+- Colors and visual tokens: the active link uses the existing `--blue-700` token; inactive links retain `--navy-950`, matching the reference hierarchy.
+- Image quality and asset fidelity: this navigation contains no image assets. Existing header logos remain unchanged and sharp.
+- Copy and content: all seven reference links are present with unchanged wording. The starting state exposes the first links; horizontal scrolling exposes the remaining links through “Contact Us.”
+
+## Browser verification
+
+- Production build passed.
+- Phone viewport: 390 × 844 px.
+- Page overflow: false.
+- Navigation overflow: true by design and contained within the menu.
+- Final-link reachability: “Contact Us” becomes visible after horizontal scrolling.
+- Navigation interaction: “Contact Us” was activated successfully and updated the URL to `/#contact`.
+- Error overlay: absent.
+- Browser page errors: none.
+- Console errors: none; only Vite and Vercel Analytics development messages were present.
+
+## Comparison history
+
+1. First pass exposed the menu but used a full-bleed width that could expand the narrow grid item.
+2. The menu was constrained with `min-width: 0`, `width: 100%`, and `max-width: 100%`; the full-bleed width and negative margin were removed.
+3. Post-fix evidence confirms no page-level horizontal overflow while preserving swipe access to every menu link.
+
+## Follow-up polish
+
+- None required for this request. Showing only part of the row at once is intentional at phone widths and communicates that the menu can be swiped.
+
+final result: passed

@@ -12,6 +12,7 @@ When implementing from a selected generated mock, treat that image as the source
 - Place paired logos and compact navigation across the top.
 - Use the supplied circular Discover Bible School Kaduna logo in the header.
 - Use a blue News control in the desktop header. Keep the original main-action palette: blue for student registration, green for volunteer-instructor registration, and white with blue text and border for the Login dropdown.
+- Keep the full primary navigation visible on phones as a single-line, horizontally scrollable menu with the active blue underline.
 - Center the welcome message and registration actions above a five-cover carousel.
 - Use the supplied study guide covers without altering their artwork.
 - Finish the page with a full-width WhatsApp help band.
