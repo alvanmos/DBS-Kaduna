@@ -855,10 +855,31 @@ h1 {
   .brand-header {
     min-height: 96px;
     grid-template-columns: 1fr auto;
+    row-gap: 12px;
   }
 
   .site-nav {
+    grid-column: 1 / -1;
+    order: 3;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    justify-content: flex-start;
+    gap: 24px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .site-nav::-webkit-scrollbar {
     display: none;
+  }
+
+  .site-nav__link {
+    flex: 0 0 auto;
+    padding: 10px 0 12px;
+    font-size: 0.85rem;
   }
 
   .welcome-panel {
@@ -896,7 +917,7 @@ h1 {
 @media (max-width: 680px) {
   .brand-header {
     min-height: 78px;
-    padding: 12px 16px;
+    padding: 12px 16px 0;
     grid-template-columns: 1fr;
   }
 
@@ -920,9 +941,14 @@ h1 {
   }
 
   .brand-header > .news-button {
+    order: 2;
     width: min(100%, 220px);
     min-height: 44px;
     justify-self: center;
+  }
+
+  .site-nav {
+    width: 100%;
   }
 
   .welcome-panel {
