@@ -24,16 +24,16 @@ export function BookDonationForm() {
     finally { setBusy(false); }
   }
   return <main className="literature-auth">
-    <a href="/literature">← Back to OneVoice27</a>
+    <a href="/literature">← Back to Adventist Literature Network</a>
     {sent ? <section className="book-donation-confirmation" role="status">
       <Package size={36} aria-hidden="true" />
       <h1>Thank you for offering your books</h1>
       <p>Your donation offer has been saved. DBS Kaduna will contact you to discuss the books and arrange collection or delivery.</p>
-      <a href="/literature">Return to the Literature Network</a>
+      <a href="/literature">Return to the Adventist Literature Network</a>
       <button type="button" onClick={() => setSent(false)}>Offer more books</button>
     </section> : <form onSubmit={submit}>
       <Package size={36} aria-hidden="true" />
-      <p>ONEVOICE27 LITERATURE NETWORK</p><h1>Donate books</h1>
+      <p>ADVENTIST LITERATURE NETWORK</p><h1>Donate books</h1>
       <span>No registration or sign-in needed. Tell us about the books you would like to give and how we can reach you.</span>
       <label>Your name or organisation<input name="donorName" autoComplete="name" minLength={2} maxLength={150} required /></label>
       <p>Provide at least one contact method. You can use an email address already linked to a DBS account.</p>

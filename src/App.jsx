@@ -364,7 +364,7 @@ export function App() {
             How It Works
           </a>
           <a className="site-nav__link" href="/literature">
-            Literature Network
+            Adventist Literature Network
           </a>
           <a className="site-nav__link" href={instructorRegistration}>
             Become an Instructor
