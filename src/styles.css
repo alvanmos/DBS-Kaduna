@@ -259,8 +259,8 @@ img {
   width: 100%;
   min-height: 58px;
   padding: 12px 24px;
-  color: #ffffff;
-  background: var(--blue-700);
+  color: var(--blue-700);
+  background: #ffffff;
   border: 2px solid var(--blue-700);
   font-size: 1.05rem;
 }
@@ -268,8 +268,8 @@ img {
 .login-trigger--action:hover,
 .login-trigger--action[aria-expanded="true"] {
   color: #ffffff;
-  background: var(--navy-950);
-  border-color: var(--navy-950);
+  background: var(--blue-700);
+  border-color: var(--blue-700);
 }
 
 .login-trigger--action:active {
@@ -482,11 +482,15 @@ h1 {
 }
 
 .action-button--instructor {
-  background: var(--blue-700);
+  background: var(--green-600);
 }
 
 .action-button--instructor:hover {
-  background: var(--navy-950);
+  background: var(--green-700);
+}
+
+.action-button--instructor:active {
+  background: var(--green-700);
 }
 
 .carousel-panel {
