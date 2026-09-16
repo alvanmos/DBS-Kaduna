@@ -23,12 +23,18 @@ export async function loadLiteratureWorkspace(profile) {
   const [sourceResult, evangelistResult, coordinatorResult, requestResult, coordinatorsResult] = await Promise.all([
     supabase.from("literature_sources").select("*").eq("profile_id", profile.id).maybeSingle(),
     supabase.from("literature_evangelists").select("*").eq("profile_id", profile.id).maybeSingle(),
-    supabase.from("literature_coordinators").select("*").eq("profile_id", profile.id).maybeSingle(),
+    supabase
+      .from("literature_coordinators")
+      .select("*")
+      .eq("profile_id", profile.id)
+      .eq("registration_source", "onevoice27")
+      .maybeSingle(),
     supabase.from("literature_requests").select("*").order("created_at", { ascending: false }).limit(60),
     profile.role === "admin" || profile.email === "onevoice27-admin@dbskaduna.org"
       ? supabase
         .from("literature_coordinators")
         .select("*")
+        .eq("registration_source", "onevoice27")
         .neq("account_status", "disabled")
         .order("created_at", { ascending: false })
       : Promise.resolve({ data: [], error: null }),
