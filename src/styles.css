@@ -857,6 +857,7 @@ h1 {
     width: 100%;
     max-width: 100%;
     justify-content: flex-start;
+    justify-content: safe center;
     gap: 24px;
     overflow-x: auto;
     overscroll-behavior-inline: contain;

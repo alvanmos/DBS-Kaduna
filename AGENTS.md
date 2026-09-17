@@ -15,6 +15,7 @@ When implementing from a selected generated mock, treat that image as the source
 - Keep the full primary navigation visible on phones as a single-line, horizontally scrollable menu with the active blue underline.
 - Keep “Adventist Literature Network” as the final primary-navigation item and distinguish it with a green background and white text.
 - Move the primary navigation onto its own horizontal row at narrower desktop and laptop widths before it can overlap the paired header logos.
+- Center the primary-navigation group on its dedicated row when it fits; preserve start alignment when the phone menu needs horizontal scrolling.
 - Center the welcome message and registration actions above a five-cover carousel.
 - Use the supplied study guide covers without altering their artwork.
 - Finish the page with a full-width WhatsApp help band.
