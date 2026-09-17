@@ -14,6 +14,7 @@ When implementing from a selected generated mock, treat that image as the source
 - Use a blue News control in the desktop header. Keep the original main-action palette: blue for student registration, green for volunteer-instructor registration, and white with blue text and border for the Login dropdown.
 - Keep the full primary navigation visible on phones as a single-line, horizontally scrollable menu with the active blue underline.
 - Keep “Adventist Literature Network” as the final primary-navigation item and distinguish it with a green background and white text.
+- Move the primary navigation onto its own horizontal row at narrower desktop and laptop widths before it can overlap the paired header logos.
 - Center the welcome message and registration actions above a five-cover carousel.
 - Use the supplied study guide covers without altering their artwork.
 - Finish the page with a full-width WhatsApp help band.
