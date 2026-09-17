@@ -161,6 +161,22 @@ img {
   background: var(--blue-700);
 }
 
+.site-nav__link--literature {
+  padding: 10px 14px;
+  color: #ffffff;
+  background: var(--green-600);
+  border-radius: 7px;
+}
+
+.site-nav__link--literature:hover {
+  color: #ffffff;
+  background: var(--green-700);
+}
+
+.site-nav__link--literature::after {
+  display: none;
+}
+
 .brand-link:focus-visible,
 .site-nav__link:focus-visible,
 .news-button:focus-visible,
@@ -880,6 +896,10 @@ h1 {
     flex: 0 0 auto;
     padding: 10px 0 12px;
     font-size: 0.85rem;
+  }
+
+  .site-nav__link--literature {
+    padding-inline: 14px;
   }
 
   .welcome-panel {
