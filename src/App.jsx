@@ -363,14 +363,17 @@ export function App() {
           <a className="site-nav__link" href="#how-it-works">
             How It Works
           </a>
-          <a className="site-nav__link" href="/literature">
-            Adventist Literature Network
-          </a>
           <a className="site-nav__link" href={instructorRegistration}>
             Become an Instructor
           </a>
           <a className="site-nav__link" href="#contact">
             Contact Us
+          </a>
+          <a
+            className="site-nav__link site-nav__link--literature"
+            href="/literature"
+          >
+            Adventist Literature Network
           </a>
         </nav>
 
